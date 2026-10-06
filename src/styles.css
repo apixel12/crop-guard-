@@ -142,3 +142,4 @@ details summary { cursor: pointer; font-weight: 600; font-size: 0.92rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.readiness .card, .readiness .error-text { margin-top: 14px; }
