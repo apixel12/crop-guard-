@@ -13,7 +13,7 @@ describe('camera fallback', () => {
       configurable: true,
       value: { getUserMedia: vi.fn().mockRejectedValue(new DOMException('denied', 'NotAllowedError')) },
     })
-    render(<Capture title="Scan Lemon Leaf" hint="h" onBack={() => {}} onAnalyze={() => {}} />)
+    render(<Capture crop="Lemon" tips={["t"]} onBack={() => {}} onAnalyze={() => {}} />)
     expect(await screen.findByText('Camera unavailable')).toBeTruthy()
     const gallery = screen.getByText('Choose from gallery')
     expect(gallery).toBeTruthy()
@@ -25,9 +25,9 @@ describe('model load failure', () => {
   it('shows Lemon AI unavailable and never claims offline readiness', async () => {
     const { ModelProvider } = await import('../src/hooks/useModels')
     const { default: Home } = await import('../src/components/Home')
-    render(<ModelProvider><Home onLemon={() => {}} onOther={() => {}} onHistory={() => {}} online offlineReady={false} /></ModelProvider>)
-    await waitFor(() => expect(screen.getByText('Lemon AI unavailable')).toBeTruthy())
-    expect(screen.queryByText('AI READY OFFLINE')).toBeNull()
-    expect((screen.getByText('Scan a Lemon Leaf') as HTMLButtonElement).disabled).toBe(true)
+    render(<ModelProvider><Home onLemon={() => {}} onOther={() => {}} onHistory={() => {}} online offlineReady={false} displayName={(_c, l) => l} /></ModelProvider>)
+    await waitFor(() => expect(screen.getByText('Lemon AI unavailable.')).toBeTruthy())
+    expect(screen.queryByText('AI ready offline')).toBeNull()
+    expect((screen.getByRole('button', { name: /Scan a lemon leaf/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 })

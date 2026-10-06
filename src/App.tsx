@@ -12,6 +12,16 @@ import { classifyLemon } from './ml/lemonClassifier'
 import { classifyPlantVillage, cropOf, PV_CROPS } from './ml/plantVillageClassifier'
 import { checkQuality } from './ml/qualityGate'
 import { allModelsCached } from './utils/offlineCheck'
+import { PLANTVILLAGE_CONDITIONS } from './data/plantVillageDiseases'
+
+const PER_CROP = Object.keys(PLANTVILLAGE_CONDITIONS).reduce<Record<string, number>>((acc, l) => {
+  const c = cropOf(l)
+  acc[c] = (acc[c] ?? 0) + 1
+  return acc
+}, {})
+const historyName = (crop: string, label: string) => (crop === 'Lemon' ? lemonName(label) : pvName(label))
+const LEMON_TIPS = ['Natural light, no harsh shadow', 'One leaf, centered', 'Fill most of the frame', 'Hold steady until sharp']
+const PV_TIPS = ['Natural light', 'One leaf, centered', 'Fill most of the frame', 'Plain background helps']
 
 type Mode = { kind: 'lemon' } | { kind: 'pv'; cropKey: string; cropName: string }
 type Screen =
@@ -69,12 +79,12 @@ export default function App() {
         const m = models['lemon-v1']
         if (!m) throw new Error('Lemon AI unavailable: the model is not loaded.')
         const pred = await classifyLemon(m, img)
-        outcome = { kind: 'prediction', pred, info: lemonInfo(pred.top[0].label), cropName: 'Lemon' }
+        outcome = { kind: 'prediction', pred, info: lemonInfo(pred.top[0].label), cropName: 'Lemon', threshold: m.meta.thresholds.confidence }
       } else {
         const m = models['plantvillage-v1']
         if (!m) throw new Error('PlantVillage AI unavailable: the model is not loaded.')
         const pred = await classifyPlantVillage(m, img, mode.cropKey)
-        outcome = { kind: 'prediction', pred, info: plantVillageInfo(pred.top[0].label), cropMismatch: pred.cropMismatch, cropName: mode.cropName }
+        outcome = { kind: 'prediction', pred, info: plantVillageInfo(pred.top[0].label), cropMismatch: pred.cropMismatch, cropName: mode.cropName, threshold: m.meta.thresholds.confidence }
       }
       if (outcome.kind === 'prediction') {
         const p = outcome.pred
@@ -102,16 +112,17 @@ export default function App() {
           onLemon={() => setScreen({ s: 'capture', mode: { kind: 'lemon' } })}
           onOther={() => setScreen({ s: 'pick' })}
           onHistory={() => setScreen({ s: 'history' })}
+          displayName={historyName}
         />
       )
     case 'pick':
-      return <CropPicker onBack={() => setScreen({ s: 'home' })} onPick={(cropKey, cropName) => setScreen({ s: 'capture', mode: { kind: 'pv', cropKey, cropName } })} />
+      return <CropPicker conditionsPerCrop={PER_CROP} onBack={() => setScreen({ s: 'home' })} onPick={(cropKey, cropName) => setScreen({ s: 'capture', mode: { kind: 'pv', cropKey, cropName } })} />
     case 'capture': {
       const lemon = screen.mode.kind === 'lemon'
       return (
         <Capture
-          title={lemon ? 'Scan Lemon Leaf' : `Scan ${screen.mode.kind === 'pv' ? screen.mode.cropName : ''} Leaf`}
-          hint={lemon ? 'Place one leaf in frame. Natural light, leaf centered, fill most of the frame.' : 'Place one leaf in frame.'}
+          crop={lemon ? 'Lemon' : screen.mode.kind === 'pv' ? screen.mode.cropName : ''}
+          tips={lemon ? LEMON_TIPS : PV_TIPS}
           onBack={() => setScreen({ s: 'home' })}
           onAnalyze={(img) => analyze(screen.mode, img)}
         />
@@ -120,8 +131,12 @@ export default function App() {
     case 'processing':
       return (
         <section className="screen processing" aria-live="polite">
-          <img className="result-photo" src={screen.photo} alt="" />
-          <p className="processing-text"><span className="spinner" aria-hidden /> Processing locally…</p>
+          <div className="topbar"><span className="crumb">{screen.mode.kind === 'lemon' ? 'Lemon' : screen.mode.cropName}<i>/</i>Analyzing</span></div>
+          <div className="scan-wrap">
+            <img src={screen.photo} alt="" />
+            <div className="scan-line" aria-hidden />
+          </div>
+          <p className="processing-text"><span className="spinner" aria-hidden /> Processing locally · nothing leaves this phone</p>
         </section>
       )
     case 'result':
@@ -135,6 +150,6 @@ export default function App() {
         />
       )
     case 'history':
-      return <History onBack={() => setScreen({ s: 'home' })} displayName={(crop, label) => (crop === 'Lemon' ? lemonName(label) : pvName(label))} />
+      return <History onBack={() => setScreen({ s: 'home' })} displayName={historyName} />
   }
 }

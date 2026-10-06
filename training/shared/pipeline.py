@@ -16,6 +16,7 @@ from datetime import date
 from pathlib import Path
 
 import certifi
+import setuptools  # noqa: F401  (distutils shim needed by TF 2.16)
 import numpy as np
 
 os.environ.setdefault("SSL_CERT_FILE", certifi.where())  # python.org builds lack CA certs
@@ -43,6 +44,9 @@ class Config:
     unfreeze_from: int = 100
     batch: int = 32
     class_weights: bool = True
+    dihedral_groups: bool = False  # group flipped/rotated copies as near-duplicates
+    robust: bool = True          # field-robustness augmentation (shared/robust.py)
+    outlier_per_batch: int = 3   # synthetic non-leaf images per batch, uniform target
 
 
 # ---------------------------------------------------------------- verify
@@ -72,7 +76,14 @@ def verify(cfg: Config) -> None:
                 with Image.open(p) as im:
                     rgb = im.convert("RGB")
                     w, h = rgb.size
-                    ph = str(imagehash.phash(rgb.resize((256, 256))))
+                    thumb = rgb.resize((256, 256))
+                    if cfg.dihedral_groups:  # canonical hash over the 8 flips/rotations
+                        T = Image.Transpose
+                        views = [thumb, thumb.transpose(T.FLIP_LEFT_RIGHT)]
+                        views += [v.transpose(t) for v in views for t in (T.ROTATE_90, T.ROTATE_180, T.ROTATE_270)]
+                        ph = min(str(imagehash.phash(v)) for v in views)
+                    else:
+                        ph = str(imagehash.phash(thumb))
             except Exception as e:  # corrupted / unreadable
                 corrupt.append({"path": str(p), "error": repr(e)})
                 continue
@@ -137,6 +148,12 @@ def prepare(cfg: Config) -> None:
     groups = defaultdict(list)
     for r in rows:
         groups[r["group"]].append(r)
+    # the same picture under two labels is label noise: exclude it, documented
+    conflicting = {g for g, m in groups.items() if len({x["label"] for x in m}) > 1}
+    dropped = [r["path"] for g in conflicting for r in groups[g]]
+    rows = [r for r in rows if r["group"] not in conflicting]
+    for g in conflicting:
+        del groups[g]
     # group's stratum = majority label; split groups per stratum 70/15/15
     by_stratum = defaultdict(list)
     for g, members in groups.items():
@@ -163,7 +180,8 @@ def prepare(cfg: Config) -> None:
         summary[split_of[r["group"]]][r["label"]] += 1
     out = {"classes": classes, "splits": {s: dict(c) for s, c in summary.items()},
            "totals": {s: sum(c.values()) for s, c in summary.items()},
-           "method": "stratified by class; perceptual-hash near-duplicate groups kept within one split"}
+           "method": "stratified by class; perceptual-hash near-duplicate groups kept within one split",
+           "droppedLabelConflicts": dropped}
     json.dump(out, open(cfg.work_dir / "split_report.json", "w"), indent=2)
     print(json.dumps(out["totals"]))
 
@@ -217,15 +235,34 @@ def build_model(n_classes: int):
 def train(cfg: Config) -> None:
     import tensorflow as tf
     from sklearn.utils.class_weight import compute_class_weight
+    from shared.robust import outlier_batch, robust_augment
 
     set_seed()
     classes, make = _datasets(cfg)
+    n = len(classes)
     train_ds, y_train = make("train", True)
     val_ds, _ = make("val", False)
     cw = None
+    w_vec = tf.ones([n])
     if cfg.class_weights:
-        w = compute_class_weight("balanced", classes=np.arange(len(classes)), y=y_train)
+        w = compute_class_weight("balanced", classes=np.arange(n), y=y_train)
         cw = {i: float(v) for i, v in enumerate(w)}
+        w_vec = tf.constant(w, tf.float32)
+
+    def to_train(x, y):
+        if cfg.robust:
+            x = robust_augment(x)
+        yo = tf.one_hot(y, n)
+        sw = tf.gather(w_vec, y)
+        if cfg.outlier_per_batch:
+            k = cfg.outlier_per_batch
+            x = tf.concat([x, outlier_batch(k)], 0)
+            yo = tf.concat([yo, tf.fill([k, n], 1.0 / n)], 0)
+            sw = tf.concat([sw, tf.ones([k])], 0)
+        return x, yo, sw
+
+    train_ds = train_ds.map(to_train, num_parallel_calls=tf.data.AUTOTUNE).prefetch(tf.data.AUTOTUNE)
+    val_ds = val_ds.map(lambda x, y: (x, tf.one_hot(y, n)))
     model, base = build_model(len(classes))
     ck = cfg.work_dir / "checkpoints"
     ck.mkdir(exist_ok=True)
@@ -235,13 +272,14 @@ def train(cfg: Config) -> None:
         tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=pat, restore_best_weights=True),
         tf.keras.callbacks.CSVLogger(str(cfg.work_dir / "history.csv"), append=True),
     ]
-    metrics = ["accuracy", tf.keras.metrics.SparseTopKCategoricalAccuracy(3, name="top3")]
+    metrics = [tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
+               tf.keras.metrics.TopKCategoricalAccuracy(3, name="top3")]
     (cfg.work_dir / "history.csv").unlink(missing_ok=True)
 
     print("Stage 1: head only", flush=True)
-    model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss="sparse_categorical_crossentropy", metrics=metrics)
+    model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss="categorical_crossentropy", metrics=metrics)
     h1 = model.fit(train_ds, validation_data=val_ds, epochs=cfg.head_epochs,
-                   class_weight=cw, callbacks=cbs(3), verbose=2)
+                   callbacks=cbs(3), verbose=2)
 
     print(f"Stage 2: fine-tune layers >= {cfg.unfreeze_from}", flush=True)
     base.trainable = True
@@ -250,11 +288,12 @@ def train(cfg: Config) -> None:
     for layer in base.layers:  # keep BN statistics frozen
         if isinstance(layer, tf.keras.layers.BatchNormalization):
             layer.trainable = False
-    model.compile(optimizer=tf.keras.optimizers.Adam(1e-5), loss="sparse_categorical_crossentropy", metrics=metrics)
+    model.compile(optimizer=tf.keras.optimizers.Adam(1e-5), loss="categorical_crossentropy", metrics=metrics)
     h2 = model.fit(train_ds, validation_data=val_ds, epochs=cfg.finetune_epochs,
-                   class_weight=cw, callbacks=cbs(4), verbose=2)
+                   callbacks=cbs(4), verbose=2)
     model.save(str(ck / "final.keras"))
-    json.dump({"stage1": h1.history, "stage2": h2.history, "classWeights": cw},
+    json.dump({"stage1": h1.history, "stage2": h2.history, "classWeights": cw,
+               "robust": cfg.robust, "outlierPerBatch": cfg.outlier_per_batch},
               open(cfg.work_dir / "history.json", "w"), indent=2, default=float)
 
 

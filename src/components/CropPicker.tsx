@@ -1,18 +1,30 @@
 import { PV_CROPS } from '../ml/plantVillageClassifier'
+import { ArrowLeft } from './Icons'
 
-export default function CropPicker({ onPick, onBack }: { onPick: (key: string, name: string) => void; onBack: () => void }) {
+export default function CropPicker({ onPick, onBack, conditionsPerCrop }: {
+  onPick: (key: string, name: string) => void
+  onBack: () => void
+  conditionsPerCrop: Record<string, number>
+}) {
   return (
     <section className="screen">
-      <header className="bar">
-        <button className="link" onClick={onBack}>← Back</button>
-        <h2>Choose crop</h2>
-      </header>
-      <p className="muted">
-        The PlantVillage model supports these 14 crops only. Lemon has its own model. Use "Scan a Lemon Leaf" on the home screen.
+      <div className="topbar">
+        <button className="back" onClick={onBack}><ArrowLeft /> Home</button>
+        <span className="crumb">PlantVillage<i>/</i>38 classes</span>
+      </div>
+      <div>
+        <p className="kicker">Other crops</p>
+        <h1 className="display page-title">Choose your crop</h1>
+      </div>
+      <p className="lede">
+        This model covers these 14 crops only. Lemon has its own model, trained on real orchard photos. Use “Scan a lemon leaf” on the home screen.
       </p>
       <div className="crop-grid">
         {PV_CROPS.map((c) => (
-          <button key={c.key} className="crop" onClick={() => onPick(c.key, c.name)}>{c.name}</button>
+          <button key={c.key} className="crop" onClick={() => onPick(c.key, c.name)}>
+            {c.name}
+            <span className="fig">{conditionsPerCrop[c.key] ?? ''}</span>
+          </button>
         ))}
       </div>
     </section>
