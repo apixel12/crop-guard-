@@ -25,6 +25,8 @@ export interface ModelMetadata {
   thresholds: Thresholds
   metrics: Record<string, number | string>
   license: string
+  /** test-time augmentation used when calibrating thresholds */
+  tta?: 'hflip'
 }
 
 export const MODELS: Record<ModelId, { label: string; base: string }> = {

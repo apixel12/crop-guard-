@@ -313,7 +313,10 @@ def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
     out = {}
     for split in ("val", "test"):
         ds, y = make(split, False)
-        probs = model.predict(ds, verbose=0)
+        # test-time augmentation: average the prediction with its mirror image.
+        # The browser does exactly the same (metadata "tta": "hflip").
+        probs = (model.predict(ds, verbose=0)
+                 + model.predict(ds.map(lambda x, _y: (tf.reverse(x, [2]), _y)), verbose=0)) / 2
         np.save(cfg.work_dir / f"probs_{split}.npy", probs)
         out[split] = (y, probs)
     yv, pv = out["val"]
@@ -384,6 +387,7 @@ def export(cfg: Config, out_dir: Path) -> None:
                                        "macroF1", "weightedF1")} | {"evaluatedOn": "held-out test split",
                                                                     "testImages": split["totals"].get("test")},
         "license": cfg.license,
+        "tta": "hflip",  # average of the image and its horizontal mirror
     }
     json.dump(meta, open(out_dir / "metadata.json", "w"), indent=2)
     print("exported", out_dir, sorted(os.listdir(out_dir)))

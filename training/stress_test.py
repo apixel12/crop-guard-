@@ -45,6 +45,14 @@ ckpt = Path(sys.argv[3]) if len(sys.argv) > 3 else work / "checkpoints" / "best.
 tag = sys.argv[4] if len(sys.argv) > 4 else "current"
 model = tf.keras.models.load_model(str(ckpt))
 print("checkpoint", ckpt)
+
+
+def predict(x):
+    """Same inference as the app: hflip test-time augmentation if the metadata says so."""
+    p = model.predict(x, batch_size=64, verbose=0)
+    if meta.get("tta") == "hflip":
+        p = (p + model.predict(x[:, :, ::-1, :].copy(), batch_size=64, verbose=0)) / 2
+    return p
 base = np.stack([load_image(tf.constant(p)).numpy() for p in paths])  # [N,224,224,3] 0..255
 
 
@@ -149,7 +157,7 @@ def summarize(probs, y_true):
 results = {}
 for pname, fn in PERTURB.items():
     x = fn(base).astype(np.float32)
-    probs = model.predict(x, batch_size=64, verbose=0)
+    probs = predict(x)
     results[pname] = summarize(probs, y)
     r = results[pname]
     print(f"{pname:34s} acc {r['accuracy']:.3f}  F1 {r['macroF1']:.3f}  "
@@ -167,7 +175,7 @@ ood = {
 }
 ood_res = {}
 for oname, x in ood.items():
-    probs = model.predict(x.astype(np.float32), batch_size=64, verbose=0)
+    probs = predict(x.astype(np.float32))
     srt = np.sort(probs, 1)
     conf = (srt[:, -1] >= T["confidence"]) & (srt[:, -1] - srt[:, -2] >= T["margin"])
     top = np.bincount(probs.argmax(1), minlength=len(classes))
