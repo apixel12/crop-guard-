@@ -306,7 +306,7 @@ def train(cfg: Config) -> None:
 # ---------------------------------------------------------------- evaluate
 def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
     import tensorflow as tf
-    from shared.metrics import calibrate_thresholds, full_report
+    from shared.metrics import calibrate_thresholds_stepped, full_report
 
     classes, make = _datasets(cfg)
     model = tf.keras.models.load_model(str(cfg.work_dir / "checkpoints" / "best.keras"))
@@ -319,8 +319,9 @@ def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
     yv, pv = out["val"]
     yt, pt = out["test"]
     report = full_report(yt, pt, classes)
-    thr = calibrate_thresholds(yv, pv) or {"confidence": 0.9, "margin": 0.5,
-                                            "note": "fallback: target precision unreachable"}
+    thr = calibrate_thresholds_stepped(yv, pv)
+    if thr is None:
+        sys.exit("STOP: no threshold reaches even 90% precision on validation; do not ship this model")
     # how thresholds behave on the untouched test set (reported, not tuned)
     srt = np.sort(pt, 1)
     acc = (srt[:, -1] >= thr["confidence"]) & (srt[:, -1] - srt[:, -2] >= thr["margin"])

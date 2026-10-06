@@ -34,6 +34,15 @@ def full_report(y_true, probs, classes):
     }
 
 
+def calibrate_thresholds_stepped(y_true, probs, targets=(0.99, 0.97, 0.95, 0.90)):
+    """Strictest reachable target wins; the target used is recorded, never invented."""
+    for t in targets:
+        r = calibrate_thresholds(y_true, probs, t)
+        if r:
+            return r
+    return None
+
+
 def calibrate_thresholds(y_true, probs, target_precision=0.99):
     """Pick the loosest (confidence, margin) pair whose accepted predictions on
     the VALIDATION set reach target precision, maximising coverage."""
