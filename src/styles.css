@@ -169,7 +169,7 @@ img { display: block; max-width: 100%; }
 .button:active:not(:disabled) { transform: scale(.985); }
 .button.primary {
   border-color: transparent; color: #fff; box-shadow: var(--shadow-1);
-  background: linear-gradient(110deg, var(--accent-deep) 0%, var(--accent) 45%, #4fd58a 100%);
+  background: linear-gradient(110deg, #145c35 0%, var(--accent-deep) 45%, #22854c 100%); /* white text ≥ 4.6:1 across the sweep */
   background-size: 220% 100%; background-position: 0% 0;
 }
 .button.primary:hover:not(:disabled), .button.primary:focus-visible:not(:disabled) { background-position: 100% 0; box-shadow: var(--shadow-accent); }
