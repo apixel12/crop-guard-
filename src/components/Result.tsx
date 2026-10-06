@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight } from './Icons'
 
 export type Outcome =
   | { kind: 'quality'; report: QualityReport }
-  | { kind: 'prediction'; pred: Prediction; info?: ConditionInfo; cropMismatch?: boolean; cropName: string; threshold: number }
+  | { kind: 'prediction'; pred: Prediction; info?: ConditionInfo; cropMismatch?: boolean; cropName: string; threshold: number; saved?: boolean }
   | { kind: 'error'; message: string }
 
 /** Never show 100%: softmax confidence is not certainty. */
@@ -144,7 +144,7 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName }
       </p>
       {p && (
         <p className="run-meta">
-          {p.pred.modelVersion} · on-device · {Math.round(p.pred.inferenceMs)} ms · saved to history
+          {p.pred.modelVersion} · on-device · {Math.round(p.pred.inferenceMs)} ms · {p.saved ? 'saved to history' : 'not saved (storage unavailable)'}
         </p>
       )}
       <button className="button primary big" onClick={onRetake}>Scan another leaf <ArrowRight /></button>

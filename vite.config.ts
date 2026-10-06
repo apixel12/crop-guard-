@@ -18,7 +18,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // never reload mid-scan: a new version takes over on next launch
       includeAssets: ['icons/*.png', 'icons/*.svg', ...modelFiles],
       manifest: {
         name: 'CropGuard',

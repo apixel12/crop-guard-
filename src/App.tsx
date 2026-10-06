@@ -98,14 +98,21 @@ export default function App() {
       }
       if (outcome.kind === 'prediction') {
         const p = outcome.pred
-        await saveScan({
-          crop: outcome.cropName,
-          modelVersion: p.modelVersion,
-          prediction: p.status === 'confident' ? p.top[0].label : 'Uncertain',
-          status: p.status,
-          confidence: p.top[0].confidence,
-          thumbnail: await makeThumbnail(img),
-        })
+        // a storage failure must not turn a valid result into an error
+        try {
+          await saveScan({
+            crop: outcome.cropName,
+            modelVersion: p.modelVersion,
+            prediction: p.status === 'confident' ? p.top[0].label : 'Uncertain',
+            status: p.status,
+            confidence: p.top[0].confidence,
+            thumbnail: await makeThumbnail(img),
+          })
+          outcome.saved = true
+        } catch (e) {
+          console.warn('[cropguard] history save failed', e)
+          outcome.saved = false
+        }
       }
     } catch (e) {
       outcome = { kind: 'error', message: e instanceof Error ? e.message : String(e) }
