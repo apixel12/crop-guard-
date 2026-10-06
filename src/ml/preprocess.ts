@@ -3,8 +3,9 @@ import * as tf from '@tensorflow/tfjs-core'
 /**
  * Mirrors training/shared/preprocessing.py exactly:
  *  - RGB (alpha dropped)
- *  - whole image resized to 224x224, bilinear, half-pixel centers
- *    (= tf.image.resize(method="bilinear") in TF2, no antialias), no crop
+ *  - center square crop (side = shorter edge, offsets floor((W-s)/2), floor((H-s)/2)),
+ *    then resized to 224x224, bilinear, half-pixel centers
+ *    (= tf.image.crop_to_bounding_box + tf.image.resize(method="bilinear"), no antialias)
  *  - float32 in [0, 255]; normalization (x/127.5 - 1) lives inside the model
  *
  * The resize is done here on the CPU rather than with tf.image.resizeBilinear
@@ -42,26 +43,34 @@ export function resizeBilinearRGB(
   return out
 }
 
-/** Reads the image's pixels at native resolution (EXIF orientation applied by the browser). */
+/** Same arithmetic as training's center_square(): integer floor offsets. */
+export function centerSquare(w: number, h: number) {
+  const s = Math.min(w, h)
+  return { sx: Math.floor((w - s) / 2), sy: Math.floor((h - s) / 2), s }
+}
+
+/** Reads the center-square pixels at native resolution (EXIF orientation applied by the browser). */
 export function readPixels(img: HTMLImageElement | ImageBitmap | HTMLCanvasElement): ImageData {
   const W = 'naturalWidth' in img ? img.naturalWidth : img.width
   const H = 'naturalHeight' in img ? img.naturalHeight : img.height
-  // iOS Safari draws a blank canvas above ~16.7 MP (e.g. 48 MP iPhone photos).
-  // Only those are pre-shrunk; at or below the cap the resize stays exact.
-  const scale = Math.min(1, Math.sqrt(MAX_CANVAS_PIXELS / (W * H)))
-  const w = Math.max(1, Math.floor(W * scale)), h = Math.max(1, Math.floor(H * scale))
+  const { sx, sy, s } = centerSquare(W, H)
+  // iOS Safari draws a blank canvas above ~16.7 MP. Squares wider than the cap
+  // (48 MP iPhone photos) are pre-shrunk; at or below it the pipeline is exact.
+  const d = Math.min(s, Math.floor(Math.sqrt(MAX_CANVAS_PIXELS)))
   const c = document.createElement('canvas')
-  c.width = w
-  c.height = h
+  c.width = d
+  c.height = d
   const ctx = c.getContext('2d', { willReadFrequently: true })!
-  ctx.drawImage(img, 0, 0, w, h)
+  ctx.imageSmoothingEnabled = d !== s // a 1:1 copy must not be resampled
+  ctx.drawImage(img, sx, sy, s, s, 0, 0, d, d)
+  const w = d, h = d
   const data = ctx.getImageData(0, 0, w, h)
   c.width = c.height = 0 // release the full-size backing store promptly (iOS)
   return data
 }
 
-export function toInputTensor(source: HTMLImageElement | ImageBitmap | HTMLCanvasElement | ImageData): tf.Tensor4D {
-  const px = source instanceof ImageData ? source : readPixels(source)
+export function toInputTensor(source: HTMLImageElement | ImageBitmap | HTMLCanvasElement): tf.Tensor4D {
+  const px = readPixels(source)
   const rgb = resizeBilinearRGB(px.data, px.width, px.height, 4)
   return tf.tensor4d(rgb, [1, INPUT_SIZE, INPUT_SIZE, 3], 'float32')
 }
