@@ -36,9 +36,9 @@ describe('disease data covers every model class', () => {
       const meta = JSON.parse(readFileSync(p, 'utf8')) as ModelMetadata
       expect(meta.classCount).toBe(n)
       expect(meta.classes).toHaveLength(n)
-      const names = meta.classes.map((c) => lookup(c)?.name)
-      expect(names.filter((x) => !x), `unmapped: ${meta.classes.filter((c) => !lookup(c))}`).toHaveLength(0)
-      expect(new Set(names).size).toBe(n) // no two classes map to the same entry
+      const infos = meta.classes.map((c) => lookup(c))
+      expect(infos.filter((x) => !x), `unmapped: ${meta.classes.filter((c) => !lookup(c))}`).toHaveLength(0)
+      expect(new Set(infos).size).toBe(n) // no two classes map to the same entry
       validateMetadata(meta, dir)
     })
   }
