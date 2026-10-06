@@ -1,7 +1,8 @@
 """Preprocessing contract shared by training and the browser.
 
 THE CONTRACT (mirrored in src/ml/preprocess.ts and in metadata.json):
-  1. Decode image, convert to 3-channel RGB (alpha dropped, grayscale expanded).
+  1. Decode image (JPEG: accurate integer DCT, as browsers do), convert to
+     3-channel RGB (alpha dropped, grayscale expanded).
   2. Resize the WHOLE image to 224x224 with bilinear interpolation
      (no center crop, aspect ratio not preserved).
   3. Feed float32 pixels in [0, 255], shape [1, 224, 224, 3], channel order RGB.
@@ -23,7 +24,15 @@ NORMALIZATION = {
 
 def load_image(path: tf.Tensor) -> tf.Tensor:
     raw = tf.io.read_file(path)
-    img = tf.io.decode_image(raw, channels=3, expand_animations=False)
+    # Browsers decode JPEG with the accurate integer DCT; TF defaults to the
+    # fast one, which shifted borderline predictions by up to 0.17 in the
+    # browser parity test. Match the browser.
+    img = tf.cond(
+        tf.io.is_jpeg(raw),
+        lambda: tf.io.decode_jpeg(raw, channels=3, dct_method="INTEGER_ACCURATE"),
+        lambda: tf.io.decode_image(raw, channels=3, expand_animations=False),
+    )
+    img.set_shape([None, None, 3])
     img = tf.image.resize(img, (IMG_SIZE, IMG_SIZE), method="bilinear")
     return tf.cast(img, tf.float32)  # [0,255]
 
