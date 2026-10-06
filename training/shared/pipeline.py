@@ -239,7 +239,7 @@ def train(cfg: Config) -> None:
     (cfg.work_dir / "history.csv").unlink(missing_ok=True)
 
     print("Stage 1: head only", flush=True)
-    model.compile(tf.keras.optimizers.Adam(1e-3), "sparse_categorical_crossentropy", metrics)
+    model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss="sparse_categorical_crossentropy", metrics=metrics)
     h1 = model.fit(train_ds, validation_data=val_ds, epochs=cfg.head_epochs,
                    class_weight=cw, callbacks=cbs(3), verbose=2)
 
@@ -250,7 +250,7 @@ def train(cfg: Config) -> None:
     for layer in base.layers:  # keep BN statistics frozen
         if isinstance(layer, tf.keras.layers.BatchNormalization):
             layer.trainable = False
-    model.compile(tf.keras.optimizers.Adam(1e-5), "sparse_categorical_crossentropy", metrics)
+    model.compile(optimizer=tf.keras.optimizers.Adam(1e-5), loss="sparse_categorical_crossentropy", metrics=metrics)
     h2 = model.fit(train_ds, validation_data=val_ds, epochs=cfg.finetune_epochs,
                    class_weight=cw, callbacks=cbs(4), verbose=2)
     model.save(str(ck / "final.keras"))

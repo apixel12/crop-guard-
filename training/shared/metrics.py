@@ -34,14 +34,14 @@ def full_report(y_true, probs, classes):
     }
 
 
-def calibrate_thresholds(y_true, probs, target_precision=0.95):
+def calibrate_thresholds(y_true, probs, target_precision=0.99):
     """Pick the loosest (confidence, margin) pair whose accepted predictions on
     the VALIDATION set reach target precision, maximising coverage."""
     srt = np.sort(probs, 1)
     top1, margin = srt[:, -1], srt[:, -1] - srt[:, -2]
     correct = probs.argmax(1) == y_true
     best = None
-    for c in np.arange(0.30, 0.99, 0.01):
+    for c in np.arange(0.50, 0.995, 0.01):
         for m in np.arange(0.0, 0.9, 0.02):
             acc = (top1 >= c) & (margin >= m)
             if acc.sum() < 20:
