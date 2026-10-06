@@ -83,7 +83,7 @@ p { margin: 0; line-height: 1.5; }
 .readiness { border-top: 1px solid var(--line); padding-top: 16px; }
 .readiness-head { font-size: 0.78rem; letter-spacing: 0.08em; font-weight: 700; color: var(--muted); display: flex; gap: 8px; align-items: center; }
 .readiness.ok .readiness-head { color: var(--leaf); }
-.readiness ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.readiness > ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
 .status { display: flex; align-items: center; gap: 10px; font-size: 0.92rem; }
 .status-val { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }

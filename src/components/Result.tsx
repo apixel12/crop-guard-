@@ -7,7 +7,7 @@ export type Outcome =
   | { kind: 'prediction'; pred: Prediction; info?: ConditionInfo; cropMismatch?: boolean; cropName: string }
   | { kind: 'error'; message: string }
 
-const pct = (p: number) => `${Math.round(p * 100)}%`
+const pct = (p: number) => `${Math.min(99, Math.round(p * 100))}%`
 
 interface Props {
   photo: string
@@ -72,8 +72,17 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName }
         <>
           <div className="card">
             <p className="eyebrow">{outcome.cropName} leaf</p>
-            <p className="label-sm">Possible condition</p>
-            <h1>{outcome.info?.name ?? displayName(outcome.pred.top[0].label)}</h1>
+            {outcome.info?.severity === 'none' ? (
+              <>
+                <p className="label-sm">Result</p>
+                <h1>No disease pattern detected</h1>
+              </>
+            ) : (
+              <>
+                <p className="label-sm">Possible condition</p>
+                <h1>{outcome.info?.name ?? displayName(outcome.pred.top[0].label)}</h1>
+              </>
+            )}
             <div className="conf">
               <span className="label-sm">Model confidence</span>
               <span className="conf-val">{pct(outcome.pred.top[0].confidence)}</span>
@@ -90,7 +99,7 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName }
                 <h3>What this means</h3>
                 <p>{outcome.info.shortDescription}</p>
                 {outcome.info.note && <p className="muted">{outcome.info.note}</p>}
-                <h3>Signs to look for</h3>
+                <h3>{outcome.info.severity === 'none' ? 'What healthy looks like' : 'Signs to look for'}</h3>
                 <ul className="list">{outcome.info.visualSigns.map((s) => <li key={s}>{s}</li>)}</ul>
               </div>
               <div className="card">

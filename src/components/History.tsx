@@ -32,7 +32,10 @@ export default function History({ onBack, displayName }: { onBack: () => void; d
             <div className="h-body">
               <strong>{s.status === 'uncertain' ? 'Uncertain' : displayName(s.crop, s.prediction)}</strong>
               <span className="muted">
-                {s.crop} · {Math.round(s.confidence * 100)}% · {new Date(s.timestamp).toLocaleString()}
+                {s.crop}
+                {s.status === 'confident' && ` · ${Math.min(99, Math.round(s.confidence * 100))}%`}
+                {' · '}
+                {new Date(s.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               </span>
               <span className="meta">{s.modelVersion}</span>
             </div>

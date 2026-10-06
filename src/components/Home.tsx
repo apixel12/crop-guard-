@@ -51,7 +51,13 @@ export default function Home({ onLemon, onOther, onHistory, online, offlineReady
 
       <div className={`readiness ${allReady && offlineReady ? 'ok' : ''}`}>
         <p className="readiness-head">
-          {allReady && offlineReady ? 'AI READY OFFLINE' : allReady ? 'AI ready · caching for offline…' : 'Preparing on-device AI…'}
+          {allReady && offlineReady
+            ? 'AI READY OFFLINE'
+            : lemon.status === 'error' || pv.status === 'error'
+              ? 'Some models unavailable'
+              : allReady
+                ? 'AI ready · caching for offline…'
+                : 'Preparing on-device AI…'}
           {!online && <span className="pill">No connection</span>}
         </p>
         <ul>
