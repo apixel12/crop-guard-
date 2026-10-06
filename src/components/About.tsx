@@ -18,7 +18,7 @@ function ModelCard({ id, title }: { id: ModelId; title: string }) {
             <div className="stat"><span className="stat-value">{pctOf(meta.thresholds.testPrecisionAccepted)}</span><span className="stat-label">Right when confident</span></div>
           </div>
           <p className="note">
-            Measured on {String(meta.metrics.testImages ?? 'held-out')} held-out images from the same dataset, never seen in training.
+            Measured on {typeof meta.metrics.testImages === 'number' ? meta.metrics.testImages.toLocaleString() : 'held-out'} held-out images from the same dataset, never seen in training.
             Confident answers need ≥ {Math.round(meta.thresholds.confidence * 100)}% model confidence, calibrated on validation data. Dataset scores are not a promise of accuracy on your plants.
           </p>
         </>

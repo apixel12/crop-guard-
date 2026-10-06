@@ -107,7 +107,7 @@ img { display: block; max-width: 100%; }
   padding: max(var(--s4), env(safe-area-inset-top)) var(--s4) max(var(--s6), env(safe-area-inset-bottom));
 }
 .screen { display: flex; flex-direction: column; gap: var(--s4); animation: enter var(--t-slow) var(--ease-out); }
-@keyframes enter { from { opacity: 0; transform: translateY(6px); } }
+@keyframes enter { from { transform: translateY(8px); } } /* position only: content is never invisible if an animation stalls */
 
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 44px; }
 .back {
@@ -342,3 +342,6 @@ details.panel[open] summary { margin-bottom: var(--s4); }
 }
 .notice svg { vertical-align: -3px; margin-right: 2px; }
 .notice.error .list li::before { background: var(--danger); }
+.panel .stat-grid { gap: var(--s2); }
+.panel .stat { padding: var(--s3) var(--s2) var(--s3) var(--s3); box-shadow: none; }
+.panel .stat-value { font-size: 26px; }

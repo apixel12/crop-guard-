@@ -23,7 +23,7 @@ export default function CropPicker({ onPick, onBack, conditionsPerCrop }: {
         {PV_CROPS.map((c) => (
           <button key={c.key} className="crop" onClick={() => onPick(c.key, c.name)}>
             {c.name}
-            <span className="fig">{conditionsPerCrop[c.key] ?? ''}</span>
+            <span className="fig" aria-label={`${conditionsPerCrop[c.key]} conditions`}>{conditionsPerCrop[c.key]} cond.</span>
           </button>
         ))}
       </div>
