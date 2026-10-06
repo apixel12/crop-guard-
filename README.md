@@ -67,6 +67,14 @@ The browser does the bilinear resize on the CPU, which reads only 224×224×4 so
 ### Data validation (what we found and did)
 
 <!-- DATA_VALIDATION -->
+- **Lemon:** 17,586 images found (17,609 published), 18 classes, 0 corrupt.
+- **2,645 byte-identical duplicates removed** (15% of the set; four classes were exactly doubled). Leaving them in would put copies in both train and test and inflate scores.
+- Near-duplicates (perceptual hash, invariant to flips/rotations) are grouped so a group never spans splits: 432 groups, 962 images.
+- 43 images that appear under two different labels were dropped as label noise.
+- Final: 14,898 unique images → train 10,430 / val 2,234 / test 2,234.
+- **Camera-format shortcut:** several lemon classes come from a single camera format, so image size alone predicted the class 24% of the time (chance 5.6%). Center-square cropping removes aspect ratio as a cue, and mild resolution jitter during training stops sharpness from identifying the source.
+- **PlantVillage:** 54,305 images, 38 classes, 0 corrupt, 21 exact duplicates removed; all images 256×256.
+<!-- /DATA_VALIDATION -->
 
 ## Model and training
 
@@ -83,6 +91,42 @@ Softmax confidence is not a probability of being right. The threshold is calibra
 ## Evaluation
 
 <!-- EVALUATION -->
+### PlantVillage
+
+**PlantVillage model** (`plantvillage-v2`), held-out test split, 8,143 images:
+
+| Accuracy | Macro F1 | Weighted F1 | Top-3 | Confident coverage | Precision when confident |
+|---|---|---|---|---|---|
+| 94.4% | 92.6% | 94.4% | 99.2% | 84.6% | 99.2% |
+
+Threshold: confidence ≥ 0.88, margin ≥ 0.78, chosen on validation for 99.0% precision. Below it the app says "Uncertain".
+
+Robustness training (v1 → v2), same generated stress data:
+
+| Condition | v1 accuracy | v2 accuracy | v1 confidently wrong | v2 confidently wrong |
+|---|---|---|---|---|
+| clean | 93.9% | 92.5% | 1.3% | 1.4% |
+| dim light (x0.45) | 83.2% | 88.2% | 4.6% | 2.0% |
+| overexposed (x1.6) | 92.5% | 92.0% | 1.8% | 1.4% |
+| warm white balance | 89.5% | 88.9% | 1.8% | 1.4% |
+| gaussian blur | 46.3% | 82.1% | 19.5% | 1.3% |
+| motion blur | 57.8% | 87.4% | 9.2% | 1.2% |
+| sensor noise | 59.7% | 81.6% | 9.3% | 1.7% |
+| jpeg q=20 | 82.0% | 88.8% | 4.6% | 0.7% |
+| low resolution (48px) | 54.9% | 86.1% | 13.0% | 1.1% |
+| rotated 90° | 84.5% | 90.4% | 3.0% | 1.2% |
+| corner occluded/shadow | 87.1% | 87.6% | 2.8% | 2.1% |
+| leaf far away on clutter (55%) | 41.2% | 83.8% | 13.7% | 1.7% |
+
+| Not-a-leaf input | v1 flagged uncertain | v2 flagged uncertain |
+|---|---|---|
+| uniform colour | 87.5% | 100.0% |
+| random noise | 11.5% | 100.0% |
+| clutter texture only | 82.5% | 100.0% |
+| gradients | 75.5% | 100.0% |
+
+The stress test's background clutter uses a different generator from training, so it is not measuring memorised textures.
+<!-- /EVALUATION -->
 
 ### Dataset benchmark ≠ field performance
 
