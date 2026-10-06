@@ -17,7 +17,10 @@ CFG = Config(
     expected_images=17609,
     dihedral_groups=True,
     head_epochs=5,
-    finetune_epochs=14,
+    finetune_epochs=22,
+    unfreeze_from=40,
+    finetune_lr=1e-4,
+    finetune_patience=5,
 )
 FOCUS = ["Healthy", "Citrus Canker", "Greening", "Curl Leaf"]
 MODEL_OUT = ROOT / "public" / "models" / "lemon-v1"
