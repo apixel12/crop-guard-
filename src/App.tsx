@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import About from './components/About'
 import Capture from './components/Capture'
 import CropPicker from './components/CropPicker'
 import History from './components/History'
@@ -31,6 +32,7 @@ type Screen =
   | { s: 'processing'; mode: Mode; photo: string }
   | { s: 'result'; mode: Mode; photo: string; outcome: Outcome }
   | { s: 'history' }
+  | { s: 'about' }
 
 const pvName = (label: string) => {
   const info = plantVillageInfo(label)
@@ -121,6 +123,7 @@ export default function App() {
           onOther={() => setScreen({ s: 'pick' })}
           onHistory={() => setScreen({ s: 'history' })}
           displayName={historyName}
+          onAbout={() => setScreen({ s: 'about' })}
         />
       )
     case 'pick':
@@ -157,6 +160,8 @@ export default function App() {
           onRetake={() => setScreen({ s: 'capture', mode: screen.mode })}
         />
       )
+    case 'about':
+      return <About onBack={() => setScreen({ s: 'home' })} />
     case 'history':
       return <History onBack={() => setScreen({ s: 'home' })} displayName={historyName} />
   }

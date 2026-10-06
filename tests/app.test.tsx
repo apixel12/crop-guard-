@@ -25,7 +25,7 @@ describe('model load failure', () => {
   it('shows Lemon AI unavailable and never claims offline readiness', async () => {
     const { ModelProvider } = await import('../src/hooks/useModels')
     const { default: Home } = await import('../src/components/Home')
-    render(<ModelProvider><Home onLemon={() => {}} onOther={() => {}} onHistory={() => {}} online offlineReady={false} displayName={(_c, l) => l} /></ModelProvider>)
+    render(<ModelProvider><Home onLemon={() => {}} onOther={() => {}} onHistory={() => {}} onAbout={() => {}} online offlineReady={false} displayName={(_c, l) => l} /></ModelProvider>)
     await waitFor(() => expect(screen.getByText('Lemon AI unavailable.')).toBeTruthy())
     expect(screen.queryByText('AI ready offline')).toBeNull()
     expect((screen.getByRole('button', { name: /Scan a lemon leaf/ }) as HTMLButtonElement).disabled).toBe(true)
