@@ -62,7 +62,7 @@
     ],
     "inModel": true,
     "formula": "pixel / 127.5 - 1",
-    "resize": "bilinear, full image, no crop, aspect not preserved",
+    "resize": "center square crop (floor offsets), then bilinear 224x224, half-pixel centers",
     "channelOrder": "RGB"
   },
   "trainingDate": "2026-10-06",
@@ -86,5 +86,6 @@
     "evaluatedOn": "held-out test split",
     "testImages": 8143
   },
-  "license": "CC BY-SA 3.0 (PlantVillage)"
+  "license": "CC BY-SA 3.0 (PlantVillage)",
+  "normalizationNote": "Center crop added to the contract after training; every PlantVillage image is 256x256, so the crop is a no-op and the reported metrics are unchanged."
 }
