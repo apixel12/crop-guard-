@@ -43,7 +43,7 @@ export default function About({ onBack }: { onBack: () => void }) {
       </p>
 
       <ModelCard id="lemon-v1" title="Lemon model" />
-      <ModelCard id="plantvillage-v1" title="PlantVillage model" />
+      <ModelCard id="plantvillage-v2" title="PlantVillage model" />
 
       <div className="panel">
         <p className="panel-label">Data and credits</p>
