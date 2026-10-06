@@ -42,6 +42,8 @@ class Config:
     head_epochs: int = 8
     finetune_epochs: int = 15
     unfreeze_from: int = 100
+    finetune_lr: float = 1e-5  # peak LR for stage 2 (cosine-decayed)
+    finetune_patience: int = 4
     batch: int = 32
     class_weights: bool = True
     dihedral_groups: bool = False  # group flipped/rotated copies as near-duplicates
@@ -288,9 +290,12 @@ def train(cfg: Config) -> None:
     for layer in base.layers:  # keep BN statistics frozen
         if isinstance(layer, tf.keras.layers.BatchNormalization):
             layer.trainable = False
-    model.compile(optimizer=tf.keras.optimizers.Adam(1e-5), loss="categorical_crossentropy", metrics=metrics)
+    steps = int(tf.data.experimental.cardinality(train_ds).numpy())
+    steps = steps if steps > 0 else 300
+    lr = tf.keras.optimizers.schedules.CosineDecay(cfg.finetune_lr, decay_steps=steps * cfg.finetune_epochs, alpha=0.05)
+    model.compile(optimizer=tf.keras.optimizers.Adam(lr), loss="categorical_crossentropy", metrics=metrics)
     h2 = model.fit(train_ds, validation_data=val_ds, epochs=cfg.finetune_epochs,
-                   callbacks=cbs(4), verbose=2)
+                   callbacks=cbs(cfg.finetune_patience), verbose=2)
     model.save(str(ck / "final.keras"))
     json.dump({"stage1": h1.history, "stage2": h2.history, "classWeights": cw,
                "robust": cfg.robust, "outlierPerBatch": cfg.outlier_per_batch},
