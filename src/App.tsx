@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Capture from './components/Capture'
 import CropPicker from './components/CropPicker'
 import History from './components/History'
@@ -45,6 +45,14 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ s: 'home' })
   const [online, setOnline] = useState(navigator.onLine)
   const [offlineReady, setOfflineReady] = useState(false)
+
+  // Release the full-resolution photo once no screen shows it any more.
+  const lastPhoto = useRef<string | null>(null)
+  useEffect(() => {
+    const photo = 'photo' in screen ? screen.photo : null
+    if (lastPhoto.current && lastPhoto.current !== photo) URL.revokeObjectURL(lastPhoto.current)
+    lastPhoto.current = photo
+  }, [screen])
 
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false)

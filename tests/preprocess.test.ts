@@ -2,6 +2,7 @@ import { describe, expect, it, beforeAll } from 'vitest'
 import * as tf from '@tensorflow/tfjs-core'
 import '@tensorflow/tfjs-backend-cpu'
 import golden from './fixtures/resize_golden.json'
+import { resizeBilinearRGB } from '../src/ml/preprocess'
 
 // Same ops as src/ml/preprocess.ts, applied to raw RGB data (jsdom has no canvas pixels)
 const preprocessRGB = (rgb: number[], h: number, w: number) =>
@@ -28,6 +29,23 @@ describe('preprocessing matches training (tf.image.resize bilinear)', () => {
       s.rgb.forEach((v, c) => expect(a[0][s.y][s.x][c]).toBeCloseTo(v, 2))
     expect(tf.mean(t).dataSync()[0]).toBeCloseTo(golden.mean, 2)
     t.dispose()
+  })
+
+  it('app CPU resize (resizeBilinearRGB) matches Python golden samples', () => {
+    const out = resizeBilinearRGB(golden.rgb, golden.w, golden.h, 3)
+    for (const s of golden.samples)
+      s.rgb.forEach((v, c) => expect(out[(s.y * 224 + s.x) * 3 + c]).toBeCloseTo(v, 2))
+    expect(out.reduce((a, b) => a + b, 0) / out.length).toBeCloseTo(golden.mean, 2)
+  })
+
+  it('app CPU resize matches tf.image.resizeBilinear everywhere', () => {
+    const ref = preprocessRGB(golden.rgb, golden.h, golden.w)
+    const a = ref.dataSync()
+    const b = resizeBilinearRGB(golden.rgb, golden.w, golden.h, 3)
+    let max = 0
+    for (let i = 0; i < a.length; i++) max = Math.max(max, Math.abs(a[i] - b[i]))
+    expect(max).toBeLessThan(1e-3)
+    ref.dispose()
   })
 
   it('does not leak tensors', () => {
