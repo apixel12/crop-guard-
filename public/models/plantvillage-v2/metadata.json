@@ -1,5 +1,5 @@
 {
-  "modelVersion": "plantvillage-v1",
+  "modelVersion": "plantvillage-v2",
   "architecture": "MobileNetV2",
   "format": "tfjs_graph_model",
   "inputSize": [
@@ -65,24 +65,24 @@
     "resize": "bilinear, full image, no crop, aspect not preserved",
     "channelOrder": "RGB"
   },
-  "trainingDate": "2026-10-05",
+  "trainingDate": "2026-10-06",
   "thresholds": {
-    "confidence": 0.91,
-    "margin": 0.0,
-    "precisionAccepted": 0.9901166781056966,
-    "coverage": 0.8946334274837283,
+    "confidence": 0.88,
+    "margin": 0.78,
+    "precisionAccepted": 0.9900847822963069,
+    "coverage": 0.854599042122068,
     "targetPrecision": 0.99,
     "calibratedOn": "validation",
-    "testCoverage": 0.8880019648778091,
-    "testPrecisionAccepted": 0.992117272852994
+    "testCoverage": 0.8461255065700601,
+    "testPrecisionAccepted": 0.9918722786647315
   },
   "metrics": {
-    "accuracy": 0.955790249293872,
-    "top3Accuracy": 0.9942281714355888,
-    "macroPrecision": 0.9460131825350304,
-    "macroRecall": 0.9420988230782036,
-    "macroF1": 0.9407946118230776,
-    "weightedF1": 0.955886306063583,
+    "accuracy": 0.9443693970281223,
+    "top3Accuracy": 0.9923860984895002,
+    "macroPrecision": 0.9320872266161735,
+    "macroRecall": 0.9269798310129289,
+    "macroF1": 0.9255875276745528,
+    "weightedF1": 0.9443310689897151,
     "evaluatedOn": "held-out test split",
     "testImages": 8143
   },

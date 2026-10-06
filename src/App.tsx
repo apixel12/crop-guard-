@@ -65,7 +65,7 @@ export default function App() {
 
   // poll the cache until the service worker has stored every model shard
   useEffect(() => {
-    if (state['lemon-v1'].status !== 'ready' || state['plantvillage-v1'].status !== 'ready') return
+    if (state['lemon-v1'].status !== 'ready' || state['plantvillage-v2'].status !== 'ready') return
     let stop = false
     const tick = async () => {
       const ok = await allModelsCached().catch(() => false)
@@ -91,7 +91,7 @@ export default function App() {
         const pred = await classifyLemon(m, img)
         outcome = { kind: 'prediction', pred, info: lemonInfo(pred.top[0].label), cropName: 'Lemon', threshold: m.meta.thresholds.confidence }
       } else {
-        const m = models['plantvillage-v1']
+        const m = models['plantvillage-v2']
         if (!m) throw new Error('PlantVillage AI unavailable: the model is not loaded.')
         const pred = await classifyPlantVillage(m, img, mode.cropKey)
         outcome = { kind: 'prediction', pred, info: plantVillageInfo(pred.top[0].label), cropMismatch: pred.cropMismatch, cropName: mode.cropName, threshold: m.meta.thresholds.confidence }

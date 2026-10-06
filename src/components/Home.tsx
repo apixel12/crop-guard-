@@ -28,7 +28,7 @@ interface Props {
 export default function Home({ onLemon, onOther, onHistory, onAbout, online, offlineReady, displayName }: Props) {
   const { state, models, retry } = useModels()
   const lemon = state['lemon-v1']
-  const pv = state['plantvillage-v1']
+  const pv = state['plantvillage-v2']
   const allReady = lemon.status === 'ready' && pv.status === 'ready'
   const anyError = lemon.status === 'error' || pv.status === 'error'
   const [recent, setRecent] = useState<ScanRecord[]>([])
@@ -68,7 +68,7 @@ export default function Home({ onLemon, onOther, onHistory, onAbout, online, off
             {!online && <span className="pill">offline</span>}
           </p>
           <ReadyRow s={lemon} label="Lemon model" count={models['lemon-v1']?.meta.classCount} />
-          <ReadyRow s={pv} label="PlantVillage model" count={models['plantvillage-v1']?.meta.classCount} />
+          <ReadyRow s={pv} label="PlantVillage model" count={models['plantvillage-v2']?.meta.classCount} />
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export default function Home({ onLemon, onOther, onHistory, onAbout, online, off
       {pv.status === 'error' && (
         <div className="notice error" role="alert">
           <b>PlantVillage AI unavailable.</b>{' '}
-          <button className="text-button" onClick={() => retry('plantvillage-v1')}>Try again</button>
+          <button className="text-button" onClick={() => retry('plantvillage-v2')}>Try again</button>
         </div>
       )}
 

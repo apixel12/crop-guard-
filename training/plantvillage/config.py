@@ -7,7 +7,7 @@ from shared.pipeline import Config  # noqa: E402
 
 # Official repo: github.com/spMohanty/PlantVillage-Dataset, raw/color
 CFG = Config(
-    name="plantvillage-v1",
+    name="plantvillage-v2",
     raw_dir=ROOT / "data" / "plantvillage_repo" / "raw" / "color",
     work_dir=ROOT / "data" / "work_plantvillage",
     dataset_label="PlantVillage (spMohanty/PlantVillage-Dataset, raw/color)",
@@ -17,4 +17,4 @@ CFG = Config(
     head_epochs=4,
     finetune_epochs=10,
 )
-MODEL_OUT = ROOT / "public" / "models" / "plantvillage-v1"
+MODEL_OUT = ROOT / "public" / "models" / "plantvillage-v2"

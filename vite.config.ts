@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // Explicitly enumerate every model file so each shard is precached by name
 // (a "/models/" prefix alone does not guarantee shards are cached).
-const MODEL_DIRS = ['lemon-v1', 'plantvillage-v1']
+const MODEL_DIRS = ['lemon-v1', 'plantvillage-v2']
 const modelFiles = MODEL_DIRS.flatMap((d) => {
   const dir = `public/models/${d}`
   return existsSync(dir)
