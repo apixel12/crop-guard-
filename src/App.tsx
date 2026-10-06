@@ -20,8 +20,8 @@ const PER_CROP = Object.keys(PLANTVILLAGE_CONDITIONS).reduce<Record<string, numb
   return acc
 }, {})
 const historyName = (crop: string, label: string) => (crop === 'Lemon' ? lemonName(label) : pvName(label))
-const LEMON_TIPS = ['Natural light, no harsh shadow', 'One leaf, centered', 'Fill most of the frame', 'Hold steady until sharp']
-const PV_TIPS = ['Natural light', 'One leaf, centered', 'Fill most of the frame', 'Plain background helps']
+const LEMON_TIPS = ['Natural light, no harsh shadow', 'One leaf inside the square', 'Leaf fills most of the square', 'Hold steady until sharp']
+const PV_TIPS = ['Natural light', 'One leaf inside the square', 'Leaf fills most of the square', 'Plain background helps']
 
 type Mode = { kind: 'lemon' } | { kind: 'pv'; cropKey: string; cropName: string }
 type Screen =

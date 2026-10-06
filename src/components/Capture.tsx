@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ArrowLeft, ArrowRight, Gallery, Retake } from './Icons'
 
 interface Props {
@@ -30,6 +30,20 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
   const [cam, setCam] = useState<'starting' | 'live' | 'unavailable'>('starting')
   const [shot, setShot] = useState<HTMLImageElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [square, setSquare] = useState<CSSProperties>({ inset: '12.5% 0%' })
+
+  // Outline exactly the center square the model analyzes. The preview uses
+  // object-fit: contain, so nothing the model sees is hidden off-screen.
+  const fit = (el: HTMLElement, w: number, h: number) => {
+    const box = el.getBoundingClientRect()
+    const scale = Math.min(box.width / w, box.height / h) // object-fit: contain
+    const side = Math.min(w, h) * scale
+    setSquare({ left: (box.width - side) / 2, top: (box.height - side) / 2, width: side, height: side })
+  }
+  const measure = () => {
+    const v = video.current
+    if (v?.videoWidth) fit(v, v.videoWidth, v.videoHeight)
+  }
 
   const stop = () => {
     stream.current?.getTracks().forEach((t) => t.stop())
@@ -49,6 +63,7 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
       if (video.current) {
         video.current.srcObject = s
         await video.current.play()
+        measure()
       }
       setCam('live')
     } catch (e) {
@@ -115,14 +130,17 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
 
       <div className="viewfinder">
         {shot ? (
-          <img src={shot.src} alt="Your leaf photo" />
+          <>
+            <img src={shot.src} alt="Your leaf photo" onLoad={(e) => fit(e.currentTarget, shot.naturalWidth, shot.naturalHeight)} />
+            <div className="brackets analyzed" style={square} aria-hidden><span /><span /><span /><span /></div>
+          </>
         ) : (
           <>
-            <video ref={video} playsInline muted aria-label="Camera preview" />
+            <video ref={video} playsInline muted aria-label="Camera preview" onLoadedMetadata={measure} />
             {cam === 'live' && (
               <>
-                <div className="brackets" aria-hidden><span /><span /><span /><span /></div>
-                <span className="vf-chip"><span className="dot ready" aria-hidden /> one leaf · fill the frame</span>
+                <div className="brackets" style={square} aria-hidden><span /><span /><span /><span /></div>
+                <span className="vf-chip"><span className="dot ready" aria-hidden /> one leaf · inside the square</span>
               </>
             )}
             {cam === 'starting' && <div className="vf-msg"><span className="spinner" aria-hidden /><p>Starting camera…</p></div>}
@@ -140,7 +158,7 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
 
       {shot ? (
         <>
-          <p className="lede">Is the leaf sharp, well lit, and filling most of the frame?</p>
+          <p className="lede">Is the leaf sharp, well lit, and filling most of the square? Only the square is analyzed.</p>
           <div className="actions row">
             <button className="button ghost" onClick={retake}><Retake /> Retake</button>
             <button className="button primary" onClick={() => { shotUrl.current = null; onAnalyze(shot) }}>Analyze <ArrowRight /></button>
