@@ -22,7 +22,8 @@ import tensorflow as tf
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "training"))
-from shared.preprocessing import load_image  # noqa: E402
+from PIL import Image, ImageOps  # noqa: E402
+from shared.preprocessing import resize_tensor  # noqa: E402
 
 name = sys.argv[1] if len(sys.argv) > 1 else "lemon"
 work = ROOT / "data" / f"work_{name}"
@@ -37,7 +38,8 @@ if not photos:
 model = tf.keras.models.load_model(str(work / "checkpoints" / "best.keras"))
 rows = []
 for p in photos:
-    x = load_image(tf.constant(str(p)))
+    # phone photos carry EXIF orientation; the browser shows them upright, so do the same
+    x = resize_tensor(tf.constant(np.asarray(ImageOps.exif_transpose(Image.open(p).convert("RGB")))))
     probs = model.predict(x[None], verbose=0)[0]
     if meta.get("tta") == "hflip":  # same inference as the app
         probs = (probs + model.predict(tf.reverse(x, [1])[None], verbose=0)[0]) / 2
