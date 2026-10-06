@@ -112,6 +112,10 @@ def robust_augment(x, level="full"):
         low = tf.image.resize(tf.image.resize(x, (r, r), "area"), (S, S), "bilinear")
         x = _pick(x, low, _mask(b, 0.12))
     # sensor noise
+    if not full:  # light: mild resolution jitter so sharpness doesn't identify the source camera
+        r = tf.random.uniform([], 128, 224, tf.int32)
+        low = tf.image.resize(tf.image.resize(x, (r, r), "area"), (S, S), "bilinear")
+        x = _pick(x, low, _mask(b, 0.4))
     sd = tf.random.uniform([b, 1, 1, 1], 3, 25 if full else 12)
     x = _pick(x, x + tf.random.normal(tf.shape(x)) * sd, _mask(b, 0.2))
     x = tf.clip_by_value(x, 0, 255)
