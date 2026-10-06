@@ -15,6 +15,9 @@ CFG = Config(
     license="CC BY 4.0",
     expected_classes=18,
     expected_images=17609,
+    dihedral_groups=True,
+    head_epochs=5,
+    finetune_epochs=14,
 )
 FOCUS = ["Healthy", "Citrus Canker", "Greening", "Curl Leaf"]
 MODEL_OUT = ROOT / "public" / "models" / "lemon-v1"

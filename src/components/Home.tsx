@@ -1,15 +1,17 @@
+import { useEffect, useState } from 'react'
+import { listScans, type ScanRecord } from '../db/history'
 import { useModels } from '../hooks/useModels'
 import type { ModelState } from '../ml/modelLoader'
+import { ArrowRight, Leaf, Lock } from './Icons'
+import { ScanRow } from './History'
 
-function Status({ s, label, count }: { s: ModelState; label: string; count?: number }) {
+function ReadyRow({ s, label, count }: { s: ModelState; label: string; count?: number }) {
   return (
-    <li className={`status ${s.status}`}>
-      <span className="dot" aria-hidden />
+    <div className="ready-row">
+      <span className={`dot ${s.status}`} aria-hidden />
       <span>{label}</span>
-      <span className="status-val">
-        {s.status === 'ready' ? `${count} conditions` : s.status === 'loading' ? 'Loading…' : 'Unavailable'}
-      </span>
-    </li>
+      <span className="fig">{s.status === 'ready' ? `${count} conditions` : s.status === 'loading' ? 'loading' : 'unavailable'}</span>
+    </div>
   )
 }
 
@@ -19,68 +21,100 @@ interface Props {
   onHistory: () => void
   online: boolean
   offlineReady: boolean
+  displayName: (crop: string, label: string) => string
 }
 
-export default function Home({ onLemon, onOther, onHistory, online, offlineReady }: Props) {
+export default function Home({ onLemon, onOther, onHistory, online, offlineReady, displayName }: Props) {
   const { state, models, retry } = useModels()
   const lemon = state['lemon-v1']
   const pv = state['plantvillage-v1']
   const allReady = lemon.status === 'ready' && pv.status === 'ready'
+  const anyError = lemon.status === 'error' || pv.status === 'error'
+  const [recent, setRecent] = useState<ScanRecord[]>([])
+  useEffect(() => { listScans().then((s) => setRecent(s.slice(0, 3))).catch(() => {}) }, [])
+
+  const head = allReady && offlineReady
+    ? { cls: 'ok', text: 'AI ready offline' }
+    : anyError
+      ? { cls: 'bad', text: 'Some models unavailable' }
+      : allReady
+        ? { cls: 'wait', text: 'AI ready · caching for offline' }
+        : { cls: 'wait', text: 'Preparing on-device AI' }
 
   return (
     <section className="screen home">
-      <div className="brand">
-        <svg viewBox="0 0 32 32" width="34" height="34" aria-hidden>
-          <path d="M6 26C6 13 14 6 27 5c0 13-7 21-20 21z" fill="var(--leaf)" />
-          <path d="M7 25C12 19 17 14 23 10" stroke="var(--paper)" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-        </svg>
-        <div>
-          <h1>CropGuard</h1>
-          <p className="muted">Offline plant disease screening</p>
+      <div className="hull">
+        <div className="brand">
+          <Leaf />
+          <span className="brand-name">Crop<b>Guard</b></span>
+        </div>
+        <h1 className="display hero-title">Scan a leaf.<br /><span>Know sooner.</span></h1>
+        <p className="hero-sub">Plant-disease screening that runs entirely on this phone, even with no signal.</p>
+
+        <div className="hero-actions">
+          <button className="button primary big" onClick={onLemon} disabled={lemon.status !== 'ready'}>
+            Scan a lemon leaf <ArrowRight />
+          </button>
+          <button className="button ghost" onClick={onOther} disabled={pv.status !== 'ready'}>
+            Scan another crop
+          </button>
+        </div>
+
+        <div className="readiness" aria-live="polite">
+          <p className={`ready-head ${head.cls}`}>
+            {head.cls === 'ok' && <span className="dot ready" aria-hidden />}
+            {head.text}
+            {!online && <span className="pill">offline</span>}
+          </p>
+          <ReadyRow s={lemon} label="Lemon model" count={models['lemon-v1']?.meta.classCount} />
+          <ReadyRow s={pv} label="PlantVillage model" count={models['plantvillage-v1']?.meta.classCount} />
         </div>
       </div>
 
-      <div className="actions stack">
-        <button className="btn primary big" onClick={onLemon} disabled={lemon.status !== 'ready'}>
-          Scan a Lemon Leaf
-        </button>
-        <button className="btn secondary big" onClick={onOther} disabled={pv.status !== 'ready'}>
-          Scan another crop
-        </button>
+      {lemon.status === 'error' && (
+        <div className="notice error" role="alert">
+          <b>Lemon AI unavailable.</b> The model could not be loaded on this device.
+          <ul className="list">
+            <li>Reconnect once so the model can download</li>
+            <li>Reopen CropGuard</li>
+            <li>Check available storage</li>
+          </ul>
+          <div className="actions"><button className="button ghost" onClick={() => retry('lemon-v1')}>Try again</button></div>
+        </div>
+      )}
+      {pv.status === 'error' && (
+        <div className="notice error" role="alert">
+          <b>PlantVillage AI unavailable.</b>{' '}
+          <button className="text-button" onClick={() => retry('plantvillage-v1')}>Try again</button>
+        </div>
+      )}
+
+      <div className="stat-grid">
+        <div className="stat"><span className="stat-value">{models['lemon-v1']?.meta.classCount ?? 18}</span><span className="stat-label">Lemon conditions</span></div>
+        <div className="stat"><span className="stat-value">14</span><span className="stat-label">Other crops</span></div>
+        <div className="stat"><span className="stat-value">0</span><span className="stat-label">Photos uploaded</span></div>
       </div>
 
-      <div className={`readiness ${allReady && offlineReady ? 'ok' : ''}`}>
-        <p className="readiness-head">
-          {allReady && offlineReady
-            ? 'AI READY OFFLINE'
-            : lemon.status === 'error' || pv.status === 'error'
-              ? 'Some models unavailable'
-              : allReady
-                ? 'AI ready · caching for offline…'
-                : 'Preparing on-device AI…'}
-          {!online && <span className="pill">No connection</span>}
-        </p>
-        <ul>
-          <Status s={lemon} label="Lemon model" count={models['lemon-v1']?.meta.classCount} />
-          <Status s={pv} label="PlantVillage model" count={models['plantvillage-v1']?.meta.classCount} />
-        </ul>
-        {lemon.status === 'error' && (
-          <div className="card warn" role="alert">
-            <h3>Lemon AI unavailable</h3>
-            <p>The model could not be loaded on this device.</p>
-            <ul className="list"><li>Reconnect once</li><li>Reopen CropGuard</li><li>Check available storage</li></ul>
-            <button className="btn secondary" onClick={() => retry('lemon-v1')}>Try again</button>
-          </div>
-        )}
-        {pv.status === 'error' && (
-          <p className="error-text">PlantVillage model unavailable. <button className="link" onClick={() => retry('plantvillage-v1')}>Retry</button></p>
-        )}
-      </div>
-
-      <p className="privacy">
-        <strong>Your photos stay on this device.</strong> Analysis runs in your browser. No uploads, no account, no analytics.
+      <p className="notice">
+        <b><Lock /> Your photos stay on this device.</b> Analysis runs in your browser. No uploads, no account, no analytics.
       </p>
-      <button className="link" onClick={onHistory}>Scan history</button>
+
+      {recent.length > 0 && (
+        <>
+          <div className="section-row">
+            <span className="kicker">Recent scans</span>
+            <button className="text-button" onClick={onHistory}>All history</button>
+          </div>
+          <ul className="history">
+            {recent.map((s) => <ScanRow key={s.id} s={s} displayName={displayName} />)}
+          </ul>
+        </>
+      )}
+      {recent.length === 0 && (
+        <button className="text-button" onClick={onHistory} style={{ justifySelf: 'start' }}>Scan history</button>
+      )}
+
+      <p className="foot">AI screening, not a diagnosis · confirm with a local extension office</p>
     </section>
   )
 }

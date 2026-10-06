@@ -14,7 +14,7 @@ CFG = Config(
     license="CC BY-SA 3.0 (PlantVillage)",
     expected_classes=38,
     expected_images=54305,
-    head_epochs=5,
-    finetune_epochs=6,
+    head_epochs=4,
+    finetune_epochs=10,
 )
 MODEL_OUT = ROOT / "public" / "models" / "plantvillage-v1"

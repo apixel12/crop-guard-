@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight, Gallery, Retake } from './Icons'
 
 interface Props {
-  title: string
-  hint: string
+  crop: string
+  tips: string[]
   onBack: () => void
   onAnalyze: (img: HTMLImageElement) => void
 }
@@ -14,16 +15,17 @@ export function loadImage(blob: Blob): Promise<HTMLImageElement> {
     img.onload = () => res(img) // browsers apply EXIF orientation for <img>
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      rej(new Error('Could not read this image'))
+      rej(new Error('That file could not be read as an image.'))
     }
     img.src = url
   })
 }
 
-export default function Capture({ title, hint, onBack, onAnalyze }: Props) {
+export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
   const video = useRef<HTMLVideoElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const stream = useRef<MediaStream | null>(null)
+  const alive = useRef(true)
   const [cam, setCam] = useState<'starting' | 'live' | 'unavailable'>('starting')
   const [shot, setShot] = useState<HTMLImageElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -41,6 +43,7 @@ export default function Capture({ title, hint, onBack, onAnalyze }: Props) {
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
         audio: false,
       })
+      if (!alive.current) { s.getTracks().forEach((t) => t.stop()); return } // left the screen meanwhile
       stream.current = s
       if (video.current) {
         video.current.srcObject = s
@@ -49,13 +52,14 @@ export default function Capture({ title, hint, onBack, onAnalyze }: Props) {
       setCam('live')
     } catch (e) {
       console.warn('[cropguard] camera unavailable', e)
-      setCam('unavailable')
+      if (alive.current) setCam('unavailable')
     }
   }
 
   useEffect(() => {
+    alive.current = true
     start()
-    return stop
+    return () => { alive.current = false; stop() }
   }, [])
 
   const capture = () => {
@@ -76,10 +80,14 @@ export default function Capture({ title, hint, onBack, onAnalyze }: Props) {
     if (!f) return
     try {
       setErr(null)
-      setShot(await loadImage(f))
+      const img = await loadImage(f)
+      if (shot) URL.revokeObjectURL(shot.src)
+      setShot(img)
       stop()
     } catch (e) {
       setErr((e as Error).message)
+    } finally {
+      if (fileInput.current) fileInput.current.value = '' // allow re-picking the same file
     }
   }
 
@@ -91,47 +99,60 @@ export default function Capture({ title, hint, onBack, onAnalyze }: Props) {
 
   return (
     <section className="screen capture">
-      <header className="bar">
-        <button className="link" onClick={() => { stop(); onBack() }}>← Back</button>
-        <h2>{title}</h2>
-      </header>
+      <div className="topbar">
+        <button className="back" onClick={() => { stop(); onBack() }}><ArrowLeft /> Home</button>
+        <span className="crumb">{crop}<i>/</i>{shot ? 'Review' : 'Capture'}</span>
+      </div>
 
       <div className="viewfinder">
         {shot ? (
-          <img src={shot.src} alt="Captured leaf" />
+          <img src={shot.src} alt="Your leaf photo" />
         ) : (
           <>
             <video ref={video} playsInline muted aria-label="Camera preview" />
-            {cam === 'live' && <div className="frame" aria-hidden />}
-            {cam === 'starting' && <p className="vf-msg">Starting camera…</p>}
+            {cam === 'live' && (
+              <>
+                <div className="brackets" aria-hidden><span /><span /><span /><span /></div>
+                <span className="vf-chip"><span className="dot ready" aria-hidden /> one leaf · fill the frame</span>
+              </>
+            )}
+            {cam === 'starting' && <div className="vf-msg"><span className="spinner" aria-hidden /><p>Starting camera…</p></div>}
             {cam === 'unavailable' && (
               <div className="vf-msg">
-                <strong>Camera unavailable</strong>
-                <span>Choose a photo from your gallery instead.</span>
+                <span className="display">Camera unavailable</span>
+                <p>Choose a photo of the leaf from your gallery instead.</p>
               </div>
             )}
           </>
         )}
       </div>
 
-      <p className="hint">{shot ? 'Is the leaf clear and in focus?' : hint}</p>
-      {err && <p className="error-text">{err}</p>}
+      {err && <p className="notice error" role="alert"><b>Couldn’t open that file.</b> {err}</p>}
 
-      <div className="actions">
-        {shot ? (
-          <>
-            <button className="btn secondary" onClick={retake}>Retake</button>
-            <button className="btn primary" onClick={() => onAnalyze(shot)}>Analyze</button>
-          </>
-        ) : (
-          <>
-            {cam === 'live' && <button className="btn primary" onClick={capture}>Capture</button>}
-            <button className={cam === 'live' ? 'btn secondary' : 'btn primary'} onClick={() => fileInput.current?.click()}>
-              Choose from gallery
+      {shot ? (
+        <>
+          <p className="lede">Is the leaf sharp, well lit, and filling most of the frame?</p>
+          <div className="actions row">
+            <button className="button ghost" onClick={retake}><Retake /> Retake</button>
+            <button className="button primary" onClick={() => onAnalyze(shot)}>Analyze <ArrowRight /></button>
+          </div>
+        </>
+      ) : (
+        <>
+          <ul className="list tips">{tips.map((t) => <li key={t}>{t}</li>)}</ul>
+          {cam === 'live' ? (
+            <div className="shutter-row">
+              <button className="side-button" onClick={() => fileInput.current?.click()}><Gallery />Gallery</button>
+              <button className="shutter" onClick={capture} aria-label="Capture photo" />
+              <span />
+            </div>
+          ) : (
+            <button className="button primary big" onClick={() => fileInput.current?.click()}>
+              <Gallery /> Choose from gallery
             </button>
-          </>
-        )}
-      </div>
+          )}
+        </>
+      )}
       <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => pick(e.target.files?.[0])} />
     </section>
   )

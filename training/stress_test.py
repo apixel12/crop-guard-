@@ -41,14 +41,29 @@ paths = [r["path"] for r in sample]
 y = np.array([int(r["label_idx"]) for r in sample])
 print(f"{len(sample)} held-out images, {per_class}/class", flush=True)
 
-model = tf.keras.models.load_model(str(work / "checkpoints" / "best.keras"))
+ckpt = Path(sys.argv[3]) if len(sys.argv) > 3 else work / "checkpoints" / "best.keras"
+tag = sys.argv[4] if len(sys.argv) > 4 else "current"
+model = tf.keras.models.load_model(str(ckpt))
+print("checkpoint", ckpt)
 base = np.stack([load_image(tf.constant(p)).numpy() for p in paths])  # [N,224,224,3] 0..255
 
 
-def texture(n):  # cluttered background: blurred colour noise (soil/mulch/foliage-ish)
-    t = rng.uniform(0, 255, (n, 28, 28, 3)).astype(np.float32)
-    t[..., 1] *= rng.uniform(0.6, 1.1, (n, 1, 1))
-    return tf.image.resize(t, (224, 224), "bicubic").numpy().clip(0, 255)
+def texture(n):
+    """Clutter for TESTING: multi-octave value noise + dark twig-like streaks.
+    Deliberately a different generator from training (shared/robust.py)."""
+    out = np.zeros((n, 224, 224, 3), np.float32)
+    for g, w in ((3, 0.4), (7, 0.3), (15, 0.2), (31, 0.1)):
+        o = rng.uniform(0, 255, (n, g, g, 3)).astype(np.float32)
+        out += w * tf.image.resize(o, (224, 224), "bilinear").numpy()
+    out = 0.5 * out.mean(-1, keepdims=True) + 0.5 * out
+    out *= np.array([0.95, 1.0, 0.7], np.float32)
+    for i in range(n):
+        for _ in range(rng.integers(3, 9)):
+            if rng.random() < 0.5:
+                y0 = rng.integers(0, 220); out[i, y0:y0 + rng.integers(2, 5), :] *= 0.45
+            else:
+                x0 = rng.integers(0, 220); out[i, :, x0:x0 + rng.integers(2, 5)] *= 0.45
+    return out.clip(0, 255)
 
 
 def jpeg(x, q):
@@ -165,11 +180,11 @@ for oname, x in ood.items():
 out = {"model": meta["modelVersion"], "thresholds": T, "images": len(sample),
        "perturbations": results, "ood": ood_res,
        "note": "Generated stress data from held-out test images; not a substitute for real field photos."}
-json.dump(out, open(work / "stress_test.json", "w"), indent=2)
-print("saved", work / "stress_test.json")
+json.dump(out, open(work / f"stress_test_{tag}.json", "w"), indent=2)
+print("saved", work / f"stress_test_{tag}.json")
 
 # --- dump 100 downscaled (160px, as checkQuality does) RGBA samples per set for the TS quality gate
-gate_dir = work / "gate_samples"
+gate_dir = work / f"gate_samples_{tag}"
 gate_dir.mkdir(exist_ok=True)
 sets = {k: fn(base[:: max(1, len(base) // 100)][:100]) for k, fn in PERTURB.items()}
 sets.update({f"OOD {k}": v[:100] for k, v in ood.items()})
