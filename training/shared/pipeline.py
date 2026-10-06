@@ -48,6 +48,7 @@ class Config:
     class_weights: bool = True
     dihedral_groups: bool = False  # group flipped/rotated copies as near-duplicates
     robust: bool = True          # field-robustness augmentation (shared/robust.py)
+    robust_level: str = "full"   # "full" (lab-style data) or "light" (field photos)
     outlier_per_batch: int = 3   # synthetic non-leaf images per batch, uniform target
 
 
@@ -253,7 +254,7 @@ def train(cfg: Config) -> None:
 
     def to_train(x, y):
         if cfg.robust:
-            x = robust_augment(x)
+            x = robust_augment(x, cfg.robust_level)
         yo = tf.one_hot(y, n)
         sw = tf.gather(w_vec, y)
         if cfg.outlier_per_batch:
@@ -298,7 +299,7 @@ def train(cfg: Config) -> None:
                    callbacks=cbs(cfg.finetune_patience), verbose=2)
     model.save(str(ck / "final.keras"))
     json.dump({"stage1": h1.history, "stage2": h2.history, "classWeights": cw,
-               "robust": cfg.robust, "outlierPerBatch": cfg.outlier_per_batch},
+               "robust": cfg.robust, "robustLevel": cfg.robust_level, "outlierPerBatch": cfg.outlier_per_batch},
               open(cfg.work_dir / "history.json", "w"), indent=2, default=float)
 
 

@@ -76,14 +76,22 @@ def _jpeg(x):
     return tf.map_fn(one, x, fn_output_signature=tf.float32)
 
 
-def robust_augment(x):
-    """x: float32 [B,224,224,3] in [0,255]."""
+def robust_augment(x, level="full"):
+    """x: float32 [B,224,224,3] in [0,255].
+
+    level="full": all transforms (for lab-style datasets such as PlantVillage).
+    level="light": no clutter compositing, blur or resolution loss. For field
+    photos (the lemon set) where lesions are small spots; those transforms
+    destroyed the detail the model needs and caused underfitting.
+    """
+    full = level == "full"
     b = tf.shape(x)[0]
     # 90° rotations (leaves are photographed at any orientation)
     k = tf.random.uniform([], 0, 4, tf.int32)
     x = _pick(x, tf.image.rot90(x, k), _mask(b, 0.5))
     # leaf further away on a cluttered background
-    x = _pick(x, _composite_on_clutter(x), _mask(b, 0.3))
+    if full:
+        x = _pick(x, _composite_on_clutter(x), _mask(b, 0.3))
     # exposure and white balance
     gain = tf.random.uniform([b, 1, 1, 1], 0.45, 1.6)
     x = _pick(x, x * gain, _mask(b, 0.4))
@@ -91,19 +99,20 @@ def robust_augment(x):
     x = _pick(x, x * wb, _mask(b, 0.35))
     x = tf.clip_by_value(x, 0, 255)
     # defocus blur
-    idx = tf.random.uniform([], 0, 3, tf.int32)
-    blurred = tf.switch_case(idx, [lambda s=s: _blur(x, _GK[s]) for s in (1.0, 1.8, 2.8)])
-    x = _pick(x, blurred, _mask(b, 0.15))
-    # motion blur (horizontal or vertical)
-    mk = tf.ones([1, 9, 3, 1]) / 9.0
-    mk = tf.cond(tf.random.uniform([]) < 0.5, lambda: mk, lambda: tf.transpose(mk, [1, 0, 2, 3]))
-    x = _pick(x, tf.nn.depthwise_conv2d(x, mk, [1, 1, 1, 1], "SAME"), _mask(b, 0.12))
-    # low resolution
-    r = tf.random.uniform([], 40, 112, tf.int32)
-    low = tf.image.resize(tf.image.resize(x, (r, r), "area"), (S, S), "bilinear")
-    x = _pick(x, low, _mask(b, 0.12))
+    if full:
+        idx = tf.random.uniform([], 0, 3, tf.int32)
+        blurred = tf.switch_case(idx, [lambda s=s: _blur(x, _GK[s]) for s in (1.0, 1.8, 2.8)])
+        x = _pick(x, blurred, _mask(b, 0.15))
+        # motion blur (horizontal or vertical)
+        mk = tf.ones([1, 9, 3, 1]) / 9.0
+        mk = tf.cond(tf.random.uniform([]) < 0.5, lambda: mk, lambda: tf.transpose(mk, [1, 0, 2, 3]))
+        x = _pick(x, tf.nn.depthwise_conv2d(x, mk, [1, 1, 1, 1], "SAME"), _mask(b, 0.12))
+        # low resolution
+        r = tf.random.uniform([], 40, 112, tf.int32)
+        low = tf.image.resize(tf.image.resize(x, (r, r), "area"), (S, S), "bilinear")
+        x = _pick(x, low, _mask(b, 0.12))
     # sensor noise
-    sd = tf.random.uniform([b, 1, 1, 1], 3, 25)
+    sd = tf.random.uniform([b, 1, 1, 1], 3, 25 if full else 12)
     x = _pick(x, x + tf.random.normal(tf.shape(x)) * sd, _mask(b, 0.2))
     x = tf.clip_by_value(x, 0, 255)
     # compression artefacts

@@ -21,6 +21,7 @@ CFG = Config(
     unfreeze_from=40,
     finetune_lr=1e-4,
     finetune_patience=5,
+    robust_level="light",
 )
 FOCUS = ["Healthy", "Citrus Canker", "Greening", "Curl Leaf"]
 MODEL_OUT = ROOT / "public" / "models" / "lemon-v1"
