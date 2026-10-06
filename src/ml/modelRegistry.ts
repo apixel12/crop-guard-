@@ -5,6 +5,8 @@ export interface Thresholds {
   margin: number
   coverage?: number
   precisionAccepted?: number
+  testCoverage?: number
+  testPrecisionAccepted?: number
   calibratedOn?: string
 }
 

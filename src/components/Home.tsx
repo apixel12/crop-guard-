@@ -19,12 +19,13 @@ interface Props {
   onLemon: () => void
   onOther: () => void
   onHistory: () => void
+  onAbout: () => void
   online: boolean
   offlineReady: boolean
   displayName: (crop: string, label: string) => string
 }
 
-export default function Home({ onLemon, onOther, onHistory, online, offlineReady, displayName }: Props) {
+export default function Home({ onLemon, onOther, onHistory, onAbout, online, offlineReady, displayName }: Props) {
   const { state, models, retry } = useModels()
   const lemon = state['lemon-v1']
   const pv = state['plantvillage-v1']
@@ -114,6 +115,7 @@ export default function Home({ onLemon, onOther, onHistory, online, offlineReady
         <button className="text-button" onClick={onHistory} style={{ justifySelf: 'start' }}>Scan history</button>
       )}
 
+      <button className="text-button" onClick={onAbout} style={{ justifySelf: 'center' }}>How it works · data · credits</button>
       <p className="foot">AI screening, not a diagnosis · confirm with a local extension office</p>
     </section>
   )
