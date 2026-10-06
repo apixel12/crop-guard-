@@ -26,6 +26,7 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
   const stream = useRef<MediaStream | null>(null)
   const alive = useRef(true)
+  const shotUrl = useRef<string | null>(null) // revoked on unmount unless handed to Analyze
   const [cam, setCam] = useState<'starting' | 'live' | 'unavailable'>('starting')
   const [shot, setShot] = useState<HTMLImageElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -59,7 +60,11 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
   useEffect(() => {
     alive.current = true
     start()
-    return () => { alive.current = false; stop() }
+    return () => {
+      alive.current = false
+      stop()
+      if (shotUrl.current) URL.revokeObjectURL(shotUrl.current)
+    }
   }, [])
 
   const capture = () => {
@@ -71,7 +76,9 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
     c.getContext('2d')!.drawImage(v, 0, 0)
     c.toBlob(async (b) => {
       if (!b) return
-      setShot(await loadImage(b))
+      const img = await loadImage(b)
+      shotUrl.current = img.src
+      setShot(img)
       stop()
     }, 'image/jpeg', 0.92)
   }
@@ -82,6 +89,7 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
       setErr(null)
       const img = await loadImage(f)
       if (shot) URL.revokeObjectURL(shot.src)
+      shotUrl.current = img.src
       setShot(img)
       stop()
     } catch (e) {
@@ -93,6 +101,7 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
 
   const retake = () => {
     if (shot) URL.revokeObjectURL(shot.src)
+    shotUrl.current = null
     setShot(null)
     start()
   }
@@ -134,7 +143,7 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
           <p className="lede">Is the leaf sharp, well lit, and filling most of the frame?</p>
           <div className="actions row">
             <button className="button ghost" onClick={retake}><Retake /> Retake</button>
-            <button className="button primary" onClick={() => onAnalyze(shot)}>Analyze <ArrowRight /></button>
+            <button className="button primary" onClick={() => { shotUrl.current = null; onAnalyze(shot) }}>Analyze <ArrowRight /></button>
           </div>
         </>
       ) : (

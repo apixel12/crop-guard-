@@ -18,11 +18,9 @@ export interface LoadedModel {
 let backendReady: Promise<string> | null = null
 export function initBackend(): Promise<string> {
   backendReady ??= (async () => {
-    try {
-      await tf.setBackend('webgl')
-    } catch {
-      await tf.setBackend('cpu')
-    }
+    // setBackend resolves false (rather than throwing) when WebGL is unavailable
+    const ok = await tf.setBackend('webgl').catch(() => false)
+    if (!ok) await tf.setBackend('cpu')
     await tf.ready()
     return tf.getBackend()
   })()
