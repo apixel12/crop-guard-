@@ -12,6 +12,7 @@ THE CONTRACT (mirrored in src/ml/preprocess.ts and in metadata.json):
   4. Normalization (pixel / 127.5 - 1) is a layer INSIDE the exported model,
      so the browser never applies it itself.
 """
+import setuptools  # noqa: F401  (distutils shim TF 2.16 needs)
 import tensorflow as tf
 
 IMG_SIZE = 224
