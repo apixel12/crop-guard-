@@ -231,8 +231,8 @@ img { display: block; max-width: 100%; }
 
 /* ---------- Capture ---------- */
 .viewfinder { position: relative; aspect-ratio: 3 / 4; border-radius: var(--radius-lg); overflow: hidden; background: var(--hull-deep); box-shadow: var(--shadow-3); }
-.viewfinder video, .viewfinder > img { width: 100%; height: 100%; object-fit: cover; }
-.brackets { position: absolute; inset: 14% 10%; pointer-events: none; }
+.viewfinder video, .viewfinder img { width: 100%; height: 100%; object-fit: contain; } /* show everything the model sees */
+.brackets { position: absolute; pointer-events: none; } /* positioned inline: the exact square the model sees */
 .brackets span { position: absolute; width: 28px; height: 28px; border: 3px solid rgba(255, 255, 255, .92); }
 .brackets span:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
 .brackets span:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
@@ -345,3 +345,5 @@ details.panel[open] summary { margin-bottom: var(--s4); }
 .panel .stat-grid { gap: var(--s2); }
 .panel .stat { padding: var(--s3) var(--s2) var(--s3) var(--s3); box-shadow: none; }
 .panel .stat-value { font-size: 26px; }
+/* On review, dim what the model will not see. */
+.brackets.analyzed { box-shadow: 0 0 0 999px rgba(8, 16, 10, .45); border-radius: 10px; }
