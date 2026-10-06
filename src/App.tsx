@@ -6,14 +6,13 @@ import History from './components/History'
 import Home from './components/Home'
 import Result, { type Outcome } from './components/Result'
 import { lemonInfo } from './data/lemonDiseases'
-import { plantVillageInfo } from './data/plantVillageDiseases'
+import { PLANTVILLAGE_CONDITIONS, plantVillageInfo } from './data/plantVillageDiseases'
 import { makeThumbnail, saveScan } from './db/history'
 import { useModels } from './hooks/useModels'
 import { classifyLemon } from './ml/lemonClassifier'
 import { classifyPlantVillage, cropOf, PV_CROPS } from './ml/plantVillageClassifier'
 import { checkQuality } from './ml/qualityGate'
 import { allModelsCached } from './utils/offlineCheck'
-import { PLANTVILLAGE_CONDITIONS } from './data/plantVillageDiseases'
 
 const PER_CROP = Object.keys(PLANTVILLAGE_CONDITIONS).reduce<Record<string, number>>((acc, l) => {
   const c = cropOf(l)
@@ -55,6 +54,20 @@ export default function App() {
     if (lastPhoto.current && lastPhoto.current !== photo) URL.revokeObjectURL(lastPhoto.current)
     lastPhoto.current = photo
   }, [screen])
+
+  // Each new screen starts at the top.
+  useEffect(() => { window.scrollTo(0, 0) }, [screen.s])
+
+  // Phone back button / back swipe: return to Home instead of leaving the app.
+  useEffect(() => {
+    if (screen.s !== 'home' && history.state?.cg !== true) history.pushState({ cg: true }, '')
+    if (screen.s === 'home' && history.state?.cg === true) history.back()
+  }, [screen.s])
+  useEffect(() => {
+    const onPop = () => setScreen((cur) => (cur.s === 'processing' ? cur : { s: 'home' }))
+    addEventListener('popstate', onPop)
+    return () => removeEventListener('popstate', onPop)
+  }, [])
 
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false)
