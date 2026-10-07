@@ -1,33 +1,42 @@
+import { CaretDown, CaretRight, CheckCircle, ClockCounterClockwise, CloudArrowDown, Leaf, OrangeSlice, Plant, WarningCircle } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { listScans, type ScanRecord } from '../db/history'
 import { useModels } from '../hooks/useModels'
-import type { ModelState } from '../ml/modelLoader'
-import { ArrowRight, Leaf, Lock } from './Icons'
-import { ScanRow } from './History'
 import { PV_CROPS } from '../ml/plantVillageClassifier'
+import { ScanRow } from './History'
 
-function ReadyRow({ s, label, count }: { s: ModelState; label: string; count?: number }) {
-  return (
-    <div className="ready-row">
-      <span className={`dot ${s.status}`} aria-hidden />
-      <span>{label}</span>
-      <span className="fig">{s.status === 'ready' ? `${count} conditions` : s.status === 'loading' ? 'loading' : 'unavailable'}</span>
-    </div>
-  )
-}
+export type Pick = { kind: 'lemon' } | { kind: 'pv'; cropKey: string; cropName: string }
+
+const MOST_GROWN = 6 // first N of PV_CROPS (ordered by NGA survey popularity)
 
 interface Props {
-  onLemon: () => void
-  onOther: () => void
+  onPick: (p: Pick) => void
   onHistory: () => void
   onAbout: () => void
   online: boolean
   offlineReady: boolean
+  conditionsPerCrop: Record<string, number>
   displayName: (crop: string, label: string) => string
 }
 
-export default function Home({ onLemon, onOther, onHistory, onAbout, online, offlineReady, displayName }: Props) {
-  const { state, models, retry } = useModels()
+function CropRow({ name, sub, lemon, disabled, onClick }: { name: string; sub: string; lemon?: boolean; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button className="list-row" onClick={onClick} disabled={disabled}>
+      <span className={`crop-icon ${lemon ? 'lemon' : ''}`} aria-hidden>
+        {lemon ? <OrangeSlice size={22} /> : <Plant size={22} />}
+      </span>
+      <span className="grow">
+        <span className="title">{name}</span>
+        <br />
+        <span className="sub">{sub}</span>
+      </span>
+      <CaretRight className="chev" size={18} aria-hidden />
+    </button>
+  )
+}
+
+export default function Home({ onPick, onHistory, onAbout, online, offlineReady, conditionsPerCrop, displayName }: Props) {
+  const { state, retry } = useModels()
   const lemon = state['lemon-v1']
   const pv = state['plantvillage-v2']
   const allReady = lemon.status === 'ready' && pv.status === 'ready'
@@ -35,89 +44,84 @@ export default function Home({ onLemon, onOther, onHistory, onAbout, online, off
   const [recent, setRecent] = useState<ScanRecord[]>([])
   useEffect(() => { listScans().then((s) => setRecent(s.slice(0, 3))).catch(() => {}) }, [])
 
-  const head = allReady && offlineReady
-    ? { cls: 'ok', text: 'AI ready offline' }
-    : anyError
-      ? { cls: 'bad', text: 'Some models unavailable' }
+  const status = anyError
+    ? { cls: 'bad', icon: <WarningCircle size={18} aria-hidden />, text: 'Some plant models could not load' }
+    : allReady && offlineReady
+      ? { cls: 'ok', icon: <CheckCircle size={18} weight="fill" aria-hidden />, text: online ? 'Ready, and works offline' : 'Offline. Everything still works' }
       : allReady
-        ? { cls: 'wait', text: 'AI ready · caching for offline' }
-        : { cls: 'wait', text: 'Preparing on-device AI' }
+        ? { cls: 'wait', icon: <CloudArrowDown size={18} aria-hidden />, text: 'Ready. Saving for offline use…' }
+        : { cls: 'wait', icon: <span className="spinner" aria-hidden />, text: 'Getting ready…' }
+
+  const sub = (key: string) => {
+    const n = conditionsPerCrop[key] ?? 0
+    return `${n} ${n === 1 ? 'condition' : 'conditions'}`
+  }
+  const crops = PV_CROPS.map((c) => (
+    <CropRow key={c.key} name={c.name} sub={sub(c.key)} disabled={pv.status !== 'ready'}
+      onClick={() => onPick({ kind: 'pv', cropKey: c.key, cropName: c.name })} />
+  ))
 
   return (
-    <section className="screen home">
-      <div className="hull">
-        <div className="brand">
-          <Leaf />
-          <span className="brand-name">Crop<b>Guard</b></span>
-        </div>
-        <h1 className="display hero-title">Scan a leaf.<br /><span>Know sooner.</span></h1>
-        <p className="hero-sub">A pocket plant doctor for home gardeners. Check a sick-looking leaf on your tomatoes, peppers, beans, lemon tree and more. It runs entirely on your phone, even with no signal.</p>
+    <section className="screen">
+      <div className="topbar">
+        <span className="wordmark"><Leaf size={24} weight="fill" aria-hidden />CropGuard</span>
+        <button className="icon-btn" onClick={onHistory}><ClockCounterClockwise size={20} aria-hidden />History</button>
+      </div>
 
-        <div className="hero-actions">
-          <button className="button primary big" onClick={onLemon} disabled={lemon.status !== 'ready'}>
-            Scan a lemon leaf <ArrowRight />
-          </button>
-          <button className="button ghost" onClick={onOther} disabled={pv.status !== 'ready'}>
-            Scan another garden crop
-          </button>
-        </div>
-
-        <div className="readiness" aria-live="polite">
-          <p className={`ready-head ${head.cls}`}>
-            {head.cls === 'ok' && <span className="dot ready" aria-hidden />}
-            {head.text}
-            {!online && <span className="pill">offline</span>}
-          </p>
-          <ReadyRow s={lemon} label="Lemon model" count={models['lemon-v1']?.meta.classCount} />
-          <ReadyRow s={pv} label="PlantVillage model" count={models['plantvillage-v2']?.meta.classCount} />
-        </div>
+      <div style={{ display: 'grid', gap: 'var(--s2)' }}>
+        <h1>What are you checking today?</h1>
+        <p className="lede">Pick the plant, then photograph one leaf. The check runs on this phone, and your photos never leave it.</p>
+        <p className={`status ${status.cls}`} aria-live="polite">{status.icon}{status.text}</p>
       </div>
 
       {lemon.status === 'error' && (
-        <div className="notice error" role="alert">
-          <b>Lemon AI unavailable.</b> The model could not be loaded on this device.
-          <ul className="list">
-            <li>Reconnect once so the model can download</li>
-            <li>Reopen CropGuard</li>
-            <li>Check available storage</li>
-          </ul>
-          <div className="actions"><button className="button ghost" onClick={() => retry('lemon-v1')}>Try again</button></div>
+        <div className="callout attention" role="alert">
+          <WarningCircle size={20} aria-hidden />
+          <div>
+            <b>The lemon model couldn’t load.</b> Connect to the internet once so it can download, or check that your phone has free storage.
+            <button className="btn" onClick={() => retry('lemon-v1')}>Try again</button>
+          </div>
         </div>
       )}
       {pv.status === 'error' && (
-        <div className="notice error" role="alert">
-          <b>PlantVillage AI unavailable.</b>{' '}
-          <button className="text-button" onClick={() => retry('plantvillage-v2')}>Try again</button>
+        <div className="callout attention" role="alert">
+          <WarningCircle size={20} aria-hidden />
+          <div>
+            <b>The garden model couldn’t load.</b>
+            <button className="btn" onClick={() => retry('plantvillage-v2')}>Try again</button>
+          </div>
         </div>
       )}
 
-      <div className="stat-grid">
-        <div className="stat"><span className="stat-value">{models['lemon-v1']?.meta.classCount ?? 18}</span><span className="stat-label">Lemon conditions</span></div>
-        <div className="stat"><span className="stat-value">{PV_CROPS.length + 1}</span><span className="stat-label">Garden crops</span></div>
-        <div className="stat"><span className="stat-value">0</span><span className="stat-label">Photos uploaded</span></div>
+      <div>
+        <h2 className="section-title">Most grown</h2>
+        <div className="list-card">
+          <CropRow name="Lemon" sub="18 conditions" lemon disabled={lemon.status !== 'ready'} onClick={() => onPick({ kind: 'lemon' })} />
+          {crops.slice(0, MOST_GROWN)}
+        </div>
       </div>
 
-      <p className="notice">
-        <b><Lock /> Your photos stay on this device.</b> Analysis runs in your browser. No uploads, no account, no analytics.
-      </p>
+      <details className="more">
+        <summary className="section-title">More plants ({crops.length - MOST_GROWN})<CaretDown size={16} aria-hidden /></summary>
+        <div className="list-card">{crops.slice(MOST_GROWN)}</div>
+      </details>
 
       {recent.length > 0 && (
-        <>
-          <div className="section-row">
-            <span className="kicker">Recent scans</span>
-            <button className="text-button" onClick={onHistory}>All history</button>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <h2 className="section-title">Recent checks</h2>
+            <button className="text-link" onClick={onHistory}>See all</button>
           </div>
-          <ul className="history">
+          <div className="list-card">
             {recent.map((s) => <ScanRow key={s.id} s={s} displayName={displayName} />)}
-          </ul>
-        </>
-      )}
-      {recent.length === 0 && (
-        <button className="text-button" onClick={onHistory} style={{ justifySelf: 'start' }}>Scan history</button>
+          </div>
+        </div>
       )}
 
-      <button className="text-button" onClick={onAbout} style={{ justifySelf: 'center' }}>How it works · data · credits</button>
-      <p className="foot">AI screening, not a diagnosis · confirm with a local extension office</p>
+      <div>
+        <button className="text-link" onClick={onAbout}>How CropGuard works</button>
+        <p className="fine-print">A screening aid, not a diagnosis. Confirm anything serious with your local extension office or a garden centre.</p>
+      </div>
     </section>
   )
 }

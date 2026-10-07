@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import About from './components/About'
 import Capture from './components/Capture'
-import CropPicker from './components/CropPicker'
 import History from './components/History'
-import Home from './components/Home'
+import Home, { type Pick } from './components/Home'
 import Result, { type Outcome } from './components/Result'
 import { lemonInfo } from './data/lemonDiseases'
 import { PLANTVILLAGE_CONDITIONS, plantVillageInfo } from './data/plantVillageDiseases'
@@ -20,13 +19,12 @@ const PER_CROP = Object.keys(PLANTVILLAGE_CONDITIONS).reduce<Record<string, numb
   return acc
 }, {})
 const historyName = (crop: string, label: string) => (crop === 'Lemon' ? lemonName(label) : pvName(label))
-const LEMON_TIPS = ['Natural light, no harsh shadow', 'One leaf inside the square', 'Leaf fills most of the square', 'Hold steady until sharp']
-const PV_TIPS = ['Natural light', 'One leaf inside the square', 'Leaf fills most of the square', 'Plain background helps']
+const LEMON_TIPS = ['Daylight, out of harsh sun', 'One leaf, filling the square', 'Hold still until it’s sharp']
+const PV_TIPS = ['Daylight, out of harsh sun', 'One leaf, filling the square', 'A plain background helps']
 
-type Mode = { kind: 'lemon' } | { kind: 'pv'; cropKey: string; cropName: string }
+type Mode = Pick
 type Screen =
   | { s: 'home' }
-  | { s: 'pick' }
   | { s: 'capture'; mode: Mode }
   | { s: 'processing'; mode: Mode; photo: string }
   | { s: 'result'; mode: Mode; photo: string; outcome: Outcome }
@@ -139,15 +137,13 @@ export default function App() {
         <Home
           online={online}
           offlineReady={offlineReady}
-          onLemon={() => setScreen({ s: 'capture', mode: { kind: 'lemon' } })}
-          onOther={() => setScreen({ s: 'pick' })}
+          conditionsPerCrop={PER_CROP}
+          onPick={(mode) => setScreen({ s: 'capture', mode })}
           onHistory={() => setScreen({ s: 'history' })}
-          displayName={historyName}
           onAbout={() => setScreen({ s: 'about' })}
+          displayName={historyName}
         />
       )
-    case 'pick':
-      return <CropPicker conditionsPerCrop={PER_CROP} onBack={() => setScreen({ s: 'home' })} onPick={(cropKey, cropName) => setScreen({ s: 'capture', mode: { kind: 'pv', cropKey, cropName } })} />
     case 'capture': {
       const lemon = screen.mode.kind === 'lemon'
       return (
@@ -161,13 +157,10 @@ export default function App() {
     }
     case 'processing':
       return (
-        <section className="screen processing" aria-live="polite">
-          <div className="topbar"><span className="crumb">{screen.mode.kind === 'lemon' ? 'Lemon' : screen.mode.cropName}<i>/</i>Analyzing</span></div>
-          <div className="scan-wrap">
-            <img src={screen.photo} alt="" />
-            <div className="scan-line" aria-hidden />
-          </div>
-          <p className="processing-text"><span className="spinner" aria-hidden /> Processing locally · nothing leaves this phone</p>
+        <section className="screen analysing" aria-live="polite">
+          <div className="topbar"><span className="caption">{screen.mode.kind === 'lemon' ? 'Lemon' : screen.mode.cropName}</span></div>
+          <img src={screen.photo} alt="" />
+          <p className="status wait"><span className="spinner" aria-hidden />Checking the leaf on this phone…</p>
         </section>
       )
     case 'result':

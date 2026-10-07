@@ -13,7 +13,7 @@ const log = []
 page.on('console', m => { if (m.type() === 'error') log.push('console error: ' + m.text()) })
 const t = Date.now()
 await page.goto(URL)
-await page.getByText('AI ready offline', { exact: false }).waitFor({ timeout: 90000 })
+await page.getByText(/works offline|Everything still works/).waitFor({ timeout: 90000 })
 const online = { readyMs: Date.now() - t }
 online.cached = await page.evaluate(async () => {
   const urls = (await Promise.all((await caches.keys()).map(async k => (await (await caches.open(k)).keys()).map(r => new URL(r.url).pathname)))).flat()
@@ -27,32 +27,32 @@ const offlineReq = []
 page.on('request', r => offlineReq.push(r.url().replace(URL, '/')))
 page.on('requestfailed', r => log.push('FAILED offline: ' + r.url()))
 await page.reload()
-await page.getByText('AI ready offline', { exact: false }).waitFor({ timeout: 60000 })
+await page.getByText(/works offline|Everything still works/).waitFor({ timeout: 60000 })
 await page.screenshot({ path: 'test-results/2-home-offline.png' })
 
 // ---- lemon scan from gallery
-await page.getByRole('button', { name: /Scan a lemon leaf/ }).click()
+await page.getByRole('button', { name: /^Lemon/ }).click()
 await page.locator('input[type=file]').setInputFiles(process.env.E2E_PHOTO ?? 'tests/e2e/healthy-lemon.jpg')
-await page.getByRole('button', { name: /Analyze/ }).click()
+await page.getByRole('button', { name: 'Check this leaf' }).click()
 await page.locator('.verdict').waitFor({ timeout: 30000 })
 const verdict = (await page.locator('.verdict').innerText()).split('\n').filter(Boolean).slice(0, 3).join(' | ')
-const meta = await page.locator('.run-meta').innerText()
+const meta = await page.locator('.fine-print').last().innerText()
 await page.screenshot({ path: 'test-results/3-result-offline.png', fullPage: true })
 
 // ---- camera capture path (Chrome fake camera), still offline
-await page.getByRole('button', { name: /Scan another leaf/ }).click()
-await page.getByRole('button', { name: 'Capture photo' }).waitFor({ timeout: 15000 })
+await page.getByRole('button', { name: 'Check another leaf' }).click()
+await page.getByRole('button', { name: 'Take photo' }).waitFor({ timeout: 15000 })
 await page.screenshot({ path: 'test-results/4-camera.png' })
-await page.getByRole('button', { name: 'Capture photo' }).click()
-await page.getByRole('button', { name: /Analyze/ }).click()
-await page.locator('.result').waitFor({ timeout: 30000 })
-const cameraOutcome = (await page.locator('.result').innerText()).split('\n').filter(Boolean).slice(2, 5).join(' | ')
+await page.getByRole('button', { name: 'Take photo' }).click()
+await page.getByRole('button', { name: 'Check this leaf' }).click()
+await page.locator('.verdict').waitFor({ timeout: 30000 })
+const cameraOutcome = (await page.locator('.verdict').innerText()).split('\n').filter(Boolean).slice(2, 5).join(' | ')
 
 // ---- history offline
-await page.getByRole('button', { name: /Home/ }).first().click()
-await page.getByRole('button', { name: /All history|Scan history/ }).click()
-await page.locator('.history li').first().waitFor({ timeout: 10000 })
-const historyCount = await page.locator('.history li').count()
+await page.getByRole('button', { name: 'Plants' }).click()
+await page.getByRole('button', { name: 'History' }).first().click()
+await page.locator('.list-row').first().waitFor({ timeout: 10000 })
+const historyCount = await page.locator('.list-row').count()
 await page.screenshot({ path: 'test-results/5-history.png' })
 
 console.log(JSON.stringify({ online, offline: { verdict, meta, cameraOutcome, historyCount,

@@ -7,7 +7,7 @@ export const cropOf = (label: string) => label.split('___')[0]
 /** Ordered by how commonly home gardeners grow them (National Gardening Association survey). */
 export const PV_CROPS: { key: string; name: string }[] = [
   { key: 'Tomato', name: 'Tomato' },
-  { key: 'Pepper,_bell', name: 'Bell Pepper' },
+  { key: 'Pepper,_bell', name: 'Bell pepper' },
   { key: 'Bean', name: 'Bean' },
   { key: 'Squash', name: 'Squash' },
   { key: 'Potato', name: 'Potato' },

@@ -1,3 +1,4 @@
+import { centerSquare } from './preprocess'
 /** Cheap pre-inference checks on a downscaled copy of the photo.
  * Thresholds are deliberately conservative: they reject clearly unusable
  * photos only. Tune against real phone shots (see docs/lemon-tree-test.md). */
@@ -67,20 +68,21 @@ export function analyzePixels(rgba: Uint8ClampedArray, w: number, h: number, src
 export function checkQuality(img: ImageBitmap | HTMLImageElement): QualityReport {
   const srcW = 'naturalWidth' in img ? img.naturalWidth : img.width
   const srcH = 'naturalHeight' in img ? img.naturalHeight : img.height
-  const scale = 160 / Math.max(srcW, srcH)
-  const w = Math.max(1, Math.round(srcW * scale)), h = Math.max(1, Math.round(srcH * scale))
+  // Judge the same center square the model analyzes (see preprocess.ts).
+  const { sx, sy, s: side } = centerSquare(srcW, srcH)
+  const w = 160, h = 160
   const c = document.createElement('canvas')
   c.width = w
   c.height = h
   const ctx = c.getContext('2d', { willReadFrequently: true })!
-  ctx.drawImage(img, 0, 0, w, h)
-  return analyzePixels(ctx.getImageData(0, 0, w, h).data, w, h, srcW, srcH)
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, w, h)
+  return analyzePixels(ctx.getImageData(0, 0, w, h).data, w, h, side, side)
 }
 
 export const ISSUE_TEXT: Record<QualityIssue, string> = {
-  'too-small': 'The image is too small. Move closer or use a higher-resolution photo.',
-  'too-dark': 'The photo is too dark. Try natural light.',
-  'too-bright': 'The photo is overexposed. Avoid direct glare.',
-  blurry: 'The photo looks blurry. Hold steady and tap to focus.',
-  'no-leaf': 'No leaf is clearly visible. Fill most of the frame with one leaf.',
+  'too-small': 'The photo is very small. Move closer, or use a larger photo.',
+  'too-dark': 'It’s too dark. Try again in daylight.',
+  'too-bright': 'It’s washed out. Step out of direct sun or glare.',
+  blurry: 'It’s blurry. Hold still and tap the leaf to focus.',
+  'no-leaf': 'The leaf is too small or hard to see. Move closer so one leaf fills the square.',
 }

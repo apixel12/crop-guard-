@@ -1,7 +1,7 @@
+import { ArrowLeft, CaretDown, CheckCircle, Question, WarningCircle, WarningOctagon } from '@phosphor-icons/react'
 import type { ConditionInfo } from '../data/types'
 import type { Prediction } from '../ml/classify'
 import { ISSUE_TEXT, type QualityReport } from '../ml/qualityGate'
-import { ArrowLeft, ArrowRight } from './Icons'
 
 export type Outcome =
   | { kind: 'quality'; report: QualityReport }
@@ -11,12 +11,12 @@ export type Outcome =
 /** Never show 100%: softmax confidence is not certainty. */
 export const pct = (p: number) => `${Math.min(99, Math.round(p * 100))}%`
 
-const SEVERITY: Record<ConditionInfo['severity'], { label: string; cls: string }> = {
-  none: { label: 'No action needed', cls: '' },
-  low: { label: 'Usually minor', cls: 'muted' },
-  moderate: { label: 'Worth attention', cls: 'amber' },
-  high: { label: 'Act promptly', cls: 'amber' },
-  regulated: { label: 'Regulated in CA', cls: 'amber' },
+const SEVERITY: Record<ConditionInfo['severity'], { text: string; cls: string }> = {
+  none: { text: 'Looks healthy', cls: 'healthy' },
+  low: { text: 'Usually minor', cls: '' },
+  moderate: { text: 'Worth keeping an eye on', cls: 'attention' },
+  high: { text: 'Act soon', cls: 'attention' },
+  regulated: { text: 'Must be reported in California', cls: 'attention' },
 }
 
 interface Props {
@@ -32,7 +32,7 @@ function Ranked({ top, displayName }: { top: Prediction['top']; displayName: (l:
     <ol className="ranked">
       {top.map((t) => (
         <li key={t.index}>
-          <div className="row"><span>{displayName(t.label)}</span><span className="fig">{pct(t.confidence)}</span></div>
+          <div className="r"><span>{displayName(t.label)}</span><span>{pct(t.confidence)}</span></div>
           <div className="bar"><span style={{ width: `${Math.max(2, t.confidence * 100)}%` }} /></div>
         </li>
       ))}
@@ -45,109 +45,112 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName }
   const confident = p?.pred.status === 'confident'
   const info = p?.info
   const healthy = confident && info?.severity === 'none'
+  const sev = info ? SEVERITY[info.severity] : null
 
   return (
-    <section className="screen result">
+    <section className="screen">
       <div className="topbar">
-        <button className="back" onClick={onHome}><ArrowLeft /> Home</button>
-        <span className="crumb">{p ? p.cropName : 'Scan'}<i>/</i>Result</span>
+        <button className="icon-btn back" onClick={onHome}><ArrowLeft size={20} aria-hidden />Plants</button>
+        {p && <span className="caption">{p.pred.modelVersion} · on this phone</span>}
       </div>
-      <img className="result-photo" src={photo} alt="The leaf that was analyzed" />
+      <img className="result-photo" src={photo} alt="The leaf that was checked" />
 
       {outcome.kind === 'quality' && (
-        <div className="panel verdict uncertain" role="alert">
-          <p className="kicker">Not analyzed</p>
-          <h1 className="display">Photo quality too low</h1>
-          <p>The photo was checked before analysis and isn’t usable yet:</p>
-          <ul className="list" style={{ marginTop: 'var(--s3)' }}>{outcome.report.issues.map((i) => <li key={i}>{ISSUE_TEXT[i]}</li>)}</ul>
+        <div className="verdict">
+          <span className="pill uncertain"><Question size={16} aria-hidden />Not checked</span>
+          <h1>The photo needs retaking</h1>
+          <ul className="bullets lede">{outcome.report.issues.map((i) => <li key={i}>{ISSUE_TEXT[i]}</li>)}</ul>
         </div>
       )}
 
       {outcome.kind === 'error' && (
-        <div className="notice error" role="alert">
-          <b>Analysis failed.</b> {outcome.message} No result was produced, and nothing was guessed.
+        <div className="callout attention" role="alert">
+          <WarningCircle size={20} aria-hidden />
+          <div><b>Something went wrong.</b> {outcome.message} No result was made up.</div>
         </div>
       )}
 
       {p && !confident && (
-        <div className="panel verdict uncertain">
-          <p className="kicker">{p.cropName} leaf · screening</p>
-          <h1 className="display">Uncertain result</h1>
-          <p>
+        <div className="verdict">
+          <span className="crop">{p.cropName}</span>
+          <h1>Not sure about this one</h1>
+          <span className="pill uncertain"><Question size={16} aria-hidden />Not confident enough to name a problem</span>
+          <p className="lede">
             {p.cropMismatch
-              ? `This doesn’t closely match the ${p.cropName.toLowerCase()} conditions the model was trained on. It may be another plant, or the photo may need retaking.`
-              : 'The image doesn’t provide enough evidence for a reliable classification, so CropGuard won’t guess.'}
+              ? `This doesn’t look like the ${p.cropName.toLowerCase()} leaves the model knows. It may be a different plant, or the photo may need retaking.`
+              : 'Rather than guess, CropGuard only names a problem when it’s confident. A clearer photo usually helps.'}
           </p>
-          <ul className="list" style={{ marginTop: 'var(--s4)' }}>
-            <li>Retake in natural light, without harsh shadows</li>
-            <li>Put one leaf in the frame and move closer</li>
-            <li>Hold steady so the leaf is sharp</li>
-            <li>Avoid busy backgrounds</li>
+          <ul className="bullets lede">
+            <li>Shoot in daylight, out of harsh sun</li>
+            <li>One leaf, filling the square</li>
+            <li>Hold still so it’s sharp</li>
           </ul>
         </div>
       )}
 
       {p && confident && (
-        <div className={`panel verdict ${healthy ? 'healthy' : ''}`}>
-          <p className="kicker">{p.cropName} leaf · {healthy ? 'result' : 'possible condition'}</p>
-          <h1 className="display">{healthy ? 'No disease pattern detected' : info?.name ?? displayName(p.pred.top[0].label)}</h1>
-          {info && (
-            <div className="verdict-meta">
-              <span className={`tag ${SEVERITY[info.severity].cls}`}>{SEVERITY[info.severity].label}</span>
-              {info.note && <span className="tag muted">Broad label</span>}
-            </div>
+        <div className="verdict">
+          <span className="crop">{p.cropName} leaf</span>
+          <h1>{healthy ? 'No problems spotted' : info?.name ?? displayName(p.pred.top[0].label)}</h1>
+          {sev && (
+            <span className={`pill ${sev.cls}`}>
+              {healthy ? <CheckCircle size={16} weight="fill" aria-hidden /> : <WarningCircle size={16} aria-hidden />}
+              {sev.text}
+            </span>
           )}
-          <div className="confidence">
-            <div className="confidence-row">
-              <span className="panel-label" style={{ margin: 0 }}>Model confidence</span>
-              <span className="confidence-value">{pct(p.pred.top[0].confidence)}</span>
-            </div>
+          <div>
+            <div className="meter-row"><span>Model confidence</span><b>{pct(p.pred.top[0].confidence)}</b></div>
             <div className="meter" aria-hidden>
               <span style={{ width: `${p.pred.top[0].confidence * 100}%` }} />
               <i style={{ left: `${p.threshold * 100}%` }} />
             </div>
-            <p className="meter-caption">
-              How strongly the photo matched the model’s training data. This is not the chance the condition is present. Below the mark ({pct(p.threshold)}), CropGuard reports “uncertain”.
+            <p className="caption" style={{ marginTop: 'var(--s2)' }}>
+              How closely this matches what the model learned, not the chance it’s right. Below the line ({pct(p.threshold)}) CropGuard says it isn’t sure.
             </p>
           </div>
         </div>
       )}
 
       {p && confident && info?.severity === 'regulated' && (
-        <div className="notice warn">
-          <b>Regulated citrus disease in California.</b> Don’t move leaves, fruit or cuttings off the property. Report suspicions to the CDFA Pest Hotline, 1-800-491-1899.
+        <div className="callout attention">
+          <WarningOctagon size={20} aria-hidden />
+          <div><b>This is a regulated citrus disease in California.</b> Don’t move leaves, fruit or cuttings off your property. Report it to the CDFA Pest Hotline: 1-800-491-1899.</div>
         </div>
       )}
 
       {p && confident && info && (
         <div className="panel">
-          <p className="panel-label">What this means</p>
-          <p>{info.shortDescription}</p>
-          {info.note && <p className="note">{info.note}</p>}
-          <p className="panel-label">{healthy ? 'What healthy looks like' : 'Signs to look for'}</p>
-          <ul className="list">{info.visualSigns.map((s) => <li key={s}>{s}</li>)}</ul>
-          <p className="panel-label" style={{ marginTop: 'var(--s5)' }}>What to do next</p>
-          {/* the CDFA reporting step is shown in its own notice above */}
-          <ul className="list">{info.generalNextSteps.filter((s) => !s.includes('CDFA')).map((s) => <li key={s}>{s}</li>)}</ul>
+          <section>
+            <h3>{healthy ? 'What this means' : 'About this problem'}</h3>
+            <p>{info.shortDescription}</p>
+            {info.note && <p className="caption">{info.note}</p>}
+          </section>
+          <section>
+            <h3>{healthy ? 'What healthy looks like' : 'What to look for'}</h3>
+            <ul className="bullets">{info.visualSigns.map((s) => <li key={s}>{s}</li>)}</ul>
+          </section>
+          <section>
+            <h3>What to do next</h3>
+            {/* the CDFA reporting step is shown in its own callout */}
+            <ul className="bullets">{info.generalNextSteps.filter((s) => !s.includes('CDFA')).map((s) => <li key={s}>{s}</li>)}</ul>
+          </section>
         </div>
       )}
 
       {p && (
         <details className="panel">
-          <summary><span className="panel-label">{confident ? 'Other possibilities' : 'What the model considered'}</span></summary>
+          <summary>{confident ? 'Other possibilities' : 'What the model was considering'}<CaretDown size={18} aria-hidden /></summary>
           <Ranked top={confident ? p.pred.top.slice(1) : p.pred.top} displayName={displayName} />
         </details>
       )}
 
-      <p className="disclaimer">
-        This is an AI screening result, not a professional diagnosis. Confirm with a local agricultural extension office or plant specialist before acting.
+      <p className="fine-print">
+        A screening aid, not a diagnosis. {p && (p.saved ? 'Saved to your history.' : 'Not saved: this phone’s storage is unavailable.')}
+        {p && ` Checked in ${Math.round(p.pred.inferenceMs)} ms.`}
       </p>
-      {p && (
-        <p className="run-meta">
-          {p.pred.modelVersion} · on-device · {Math.round(p.pred.inferenceMs)} ms · {p.saved ? 'saved to history' : 'not saved (storage unavailable)'}
-        </p>
-      )}
-      <button className="button primary big" onClick={onRetake}>Scan another leaf <ArrowRight /></button>
+      <div className="sticky-cta">
+        <button className="btn primary full" onClick={onRetake}>Check another leaf</button>
+      </div>
     </section>
   )
 }

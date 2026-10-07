@@ -1,6 +1,6 @@
+import { ArrowLeft, Trash } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { deleteScan, listScans, type ScanRecord } from '../db/history'
-import { ArrowLeft, Trash } from './Icons'
 
 function Thumb({ blob }: { blob: Blob }) {
   const [url, setUrl] = useState<string>()
@@ -9,7 +9,7 @@ function Thumb({ blob }: { blob: Blob }) {
     setUrl(u)
     return () => URL.revokeObjectURL(u)
   }, [blob])
-  return url ? <img src={url} alt="" /> : <span />
+  return url ? <img className="thumb" src={url} alt="" /> : <span className="thumb" />
 }
 
 const when = (t: number) =>
@@ -23,23 +23,24 @@ interface RowProps {
 
 export function ScanRow({ s, displayName, onDelete }: RowProps) {
   const uncertain = s.status === 'uncertain'
+  const name = uncertain ? 'Not sure' : displayName(s.crop, s.prediction)
   return (
-    <li>
+    <div className="list-row">
       <Thumb blob={s.thumbnail} />
-      <div>
-        <div className="h-title">{uncertain ? 'Uncertain result' : displayName(s.crop, s.prediction)}</div>
-        <div className="h-meta">
-          <span className={`tag ${uncertain ? 'amber' : ''}`}>{s.crop}</span>
-          {!uncertain && <span className="fig">{Math.min(99, Math.round(s.confidence * 100))}%</span>}
-          <span>{when(s.timestamp)}</span>
-        </div>
-      </div>
-      {onDelete ? (
-        <button className="side-button" aria-label={`Delete scan from ${when(s.timestamp)}`} onClick={() => onDelete(s.id)}>
-          <Trash />
+      <span className="grow">
+        <span className="title">{name}</span>
+        <br />
+        <span className="sub">
+          {s.crop} · {when(s.timestamp)}
+          {!uncertain && ` · ${Math.min(99, Math.round(s.confidence * 100))}%`}
+        </span>
+      </span>
+      {onDelete && (
+        <button className="icon-btn" aria-label={`Delete ${name} from ${when(s.timestamp)}`} onClick={() => onDelete(s.id)}>
+          <Trash size={20} aria-hidden />
         </button>
-      ) : <span />}
-    </li>
+      )}
+    </div>
   )
 }
 
@@ -51,28 +52,25 @@ export default function History({ onBack, displayName }: { onBack: () => void; d
   return (
     <section className="screen">
       <div className="topbar">
-        <button className="back" onClick={onBack}><ArrowLeft /> Home</button>
-        <span className="crumb">Stored on this device</span>
+        <button className="icon-btn back" onClick={onBack}><ArrowLeft size={20} aria-hidden />Back</button>
       </div>
-      <div>
-        <p className="kicker">History</p>
-        <h1 className="display page-title">Your scans</h1>
+      <div style={{ display: 'grid', gap: 'var(--s2)' }}>
+        <h1>History</h1>
+        <p className="lede">Saved only on this phone. Each check records which model version made it.</p>
       </div>
-      {scans === null && <p className="muted">Loading…</p>}
+      {scans === null && <p className="caption">Loading…</p>}
       {scans?.length === 0 && (
-        <div className="empty">
-          <span className="display">No scans yet</span>
-          <p>Results you analyze are saved here, on this device only.</p>
+        <div className="callout">
+          <div><b>No checks yet.</b> When you check a leaf, the result is kept here so you can compare over time.</div>
         </div>
       )}
       {!!scans?.length && (
-        <ul className="history">
+        <div className="list-card">
           {scans.map((s) => (
             <ScanRow key={s.id} s={s} displayName={displayName} onDelete={(id) => deleteScan(id).then(refresh)} />
           ))}
-        </ul>
+        </div>
       )}
-      {!!scans?.length && <p className="foot">{scans.length} saved · each stores the model version used</p>}
     </section>
   )
 }

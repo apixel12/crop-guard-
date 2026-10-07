@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { ArrowLeft, ArrowRight, Gallery, Retake } from './Icons'
+import { ArrowClockwise, ArrowLeft, ImageSquare } from '@phosphor-icons/react'
 
 interface Props {
   crop: string
@@ -124,8 +124,8 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
   return (
     <section className="screen capture">
       <div className="topbar">
-        <button className="back" onClick={() => { stop(); onBack() }}><ArrowLeft /> Home</button>
-        <span className="crumb">{crop}<i>/</i>{shot ? 'Review' : 'Capture'}</span>
+        <button className="icon-btn back" onClick={() => { stop(); onBack() }}><ArrowLeft size={20} aria-hidden />Back</button>
+        <span className="caption">{crop}</span>
       </div>
 
       <div className="viewfinder">
@@ -137,46 +137,39 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
         ) : (
           <>
             <video ref={video} playsInline muted aria-label="Camera preview" onLoadedMetadata={measure} />
-            {cam === 'live' && (
-              <>
-                <div className="brackets" style={square} aria-hidden><span /><span /><span /><span /></div>
-                <span className="vf-chip"><span className="dot ready" aria-hidden /> one leaf · inside the square</span>
-              </>
-            )}
+            {cam === 'live' && <div className="brackets" style={square} aria-hidden><span /><span /><span /><span /></div>}
             {cam === 'starting' && <div className="vf-msg"><span className="spinner" aria-hidden /><p>Starting camera…</p></div>}
             {cam === 'unavailable' && (
               <div className="vf-msg">
-                <span className="display">Camera unavailable</span>
-                <p>Choose a photo of the leaf from your gallery instead.</p>
+                <b>Camera not available</b>
+                <p>You can still choose a photo of the leaf from your library.</p>
               </div>
             )}
           </>
         )}
       </div>
 
-      {err && <p className="notice error" role="alert"><b>Couldn’t open that file.</b> {err}</p>}
+      {err && <div className="callout attention" role="alert"><div><b>That file couldn’t be opened.</b> {err}</div></div>}
 
       {shot ? (
         <>
-          <p className="lede">Is the leaf sharp, well lit, and filling most of the square? Only the square is analyzed.</p>
-          <div className="actions row">
-            <button className="button ghost" onClick={retake}><Retake /> Retake</button>
-            <button className="button primary" onClick={() => { shotUrl.current = null; onAnalyze(shot) }}>Analyze <ArrowRight /></button>
+          <p className="hint">Only the area inside the square is checked. Is the leaf sharp and filling most of it?</p>
+          <div className="row-actions">
+            <button className="btn" onClick={retake}><ArrowClockwise size={20} aria-hidden />Retake</button>
+            <button className="btn primary" onClick={() => { shotUrl.current = null; onAnalyze(shot) }}>Check this leaf</button>
           </div>
         </>
       ) : (
         <>
-          <ul className="list tips">{tips.map((t) => <li key={t}>{t}</li>)}</ul>
+          <ul className="bullets hint">{tips.map((t) => <li key={t}>{t}</li>)}</ul>
           {cam === 'live' ? (
-            <div className="shutter-row">
-              <button className="side-button" onClick={() => fileInput.current?.click()}><Gallery />Gallery</button>
-              <button className="shutter" onClick={capture} aria-label="Capture photo" />
+            <div className="capture-bar">
+              <button className="gallery-btn" onClick={() => fileInput.current?.click()}><ImageSquare size={24} aria-hidden />Library</button>
+              <button className="shutter" onClick={capture} aria-label="Take photo" />
               <span />
             </div>
           ) : (
-            <button className="button primary big" onClick={() => fileInput.current?.click()}>
-              <Gallery /> Choose from gallery
-            </button>
+            <button className="btn primary full" onClick={() => fileInput.current?.click()}><ImageSquare size={20} aria-hidden />Choose a photo</button>
           )}
         </>
       )}

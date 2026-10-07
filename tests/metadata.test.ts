@@ -25,7 +25,7 @@ describe('metadata validation', () => {
 
 describe('disease data covers every model class', () => {
   it('has 18 lemon entries', () => expect(Object.keys(LEMON_CONDITIONS)).toHaveLength(18))
-  it('has 38 PlantVillage entries', () => expect(Object.keys(PLANTVILLAGE_CONDITIONS)).toHaveLength(38))
+  it('has 41 garden entries (PlantVillage 38 + beans 3)', () => expect(Object.keys(PLANTVILLAGE_CONDITIONS)).toHaveLength(41))
 
   for (const [dir, lookup, n] of [
     ['lemon-v1', (l: string) => lemonInfo(l), 18],
