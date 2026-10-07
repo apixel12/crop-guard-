@@ -4,21 +4,23 @@ import type { LoadedModel } from './modelLoader'
 /** PlantVillage labels look like "Tomato___Late_blight". */
 export const cropOf = (label: string) => label.split('___')[0]
 
+/** Ordered by how commonly home gardeners grow them (National Gardening Association survey). */
 export const PV_CROPS: { key: string; name: string }[] = [
-  { key: 'Apple', name: 'Apple' },
-  { key: 'Blueberry', name: 'Blueberry' },
-  { key: 'Cherry_(including_sour)', name: 'Cherry' },
+  { key: 'Tomato', name: 'Tomato' },
+  { key: 'Pepper,_bell', name: 'Bell Pepper' },
+  { key: 'Bean', name: 'Bean' },
+  { key: 'Squash', name: 'Squash' },
+  { key: 'Potato', name: 'Potato' },
+  { key: 'Strawberry', name: 'Strawberry' },
   { key: 'Corn_(maize)', name: 'Corn' },
   { key: 'Grape', name: 'Grape' },
-  { key: 'Orange', name: 'Orange' },
+  { key: 'Apple', name: 'Apple' },
   { key: 'Peach', name: 'Peach' },
-  { key: 'Pepper,_bell', name: 'Bell Pepper' },
-  { key: 'Potato', name: 'Potato' },
+  { key: 'Cherry_(including_sour)', name: 'Cherry' },
+  { key: 'Blueberry', name: 'Blueberry' },
   { key: 'Raspberry', name: 'Raspberry' },
+  { key: 'Orange', name: 'Orange' },
   { key: 'Soybean', name: 'Soybean' },
-  { key: 'Squash', name: 'Squash' },
-  { key: 'Strawberry', name: 'Strawberry' },
-  { key: 'Tomato', name: 'Tomato' },
 ]
 
 export interface PVPrediction extends Prediction {

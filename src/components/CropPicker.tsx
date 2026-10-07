@@ -10,14 +10,14 @@ export default function CropPicker({ onPick, onBack, conditionsPerCrop }: {
     <section className="screen">
       <div className="topbar">
         <button className="back" onClick={onBack}><ArrowLeft /> Home</button>
-        <span className="crumb">PlantVillage<i>/</i>38 classes</span>
+        <span className="crumb">{PV_CROPS.length} crops</span>
       </div>
       <div>
-        <p className="kicker">Other crops</p>
-        <h1 className="display page-title">Choose your crop</h1>
+        <p className="kicker">Garden crops</p>
+        <h1 className="display page-title">What are you growing?</h1>
       </div>
       <p className="lede">
-        This model covers these 14 crops only. Lemon has its own model, trained on real orchard photos. Use “Scan a lemon leaf” on the home screen.
+        Sorted by what home gardeners grow most. The model only knows these crops. Lemon has its own model; use “Scan a lemon leaf” on the home screen.
       </p>
       <div className="crop-grid">
         {PV_CROPS.map((c) => (

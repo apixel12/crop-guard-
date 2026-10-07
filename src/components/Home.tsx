@@ -4,6 +4,7 @@ import { useModels } from '../hooks/useModels'
 import type { ModelState } from '../ml/modelLoader'
 import { ArrowRight, Leaf, Lock } from './Icons'
 import { ScanRow } from './History'
+import { PV_CROPS } from '../ml/plantVillageClassifier'
 
 function ReadyRow({ s, label, count }: { s: ModelState; label: string; count?: number }) {
   return (
@@ -50,14 +51,14 @@ export default function Home({ onLemon, onOther, onHistory, onAbout, online, off
           <span className="brand-name">Crop<b>Guard</b></span>
         </div>
         <h1 className="display hero-title">Scan a leaf.<br /><span>Know sooner.</span></h1>
-        <p className="hero-sub">Plant-disease screening that runs entirely on this phone, even with no signal.</p>
+        <p className="hero-sub">A pocket plant doctor for home gardeners. Check a sick-looking leaf on your tomatoes, peppers, beans, lemon tree and more. It runs entirely on your phone, even with no signal.</p>
 
         <div className="hero-actions">
           <button className="button primary big" onClick={onLemon} disabled={lemon.status !== 'ready'}>
             Scan a lemon leaf <ArrowRight />
           </button>
           <button className="button ghost" onClick={onOther} disabled={pv.status !== 'ready'}>
-            Scan another crop
+            Scan another garden crop
           </button>
         </div>
 
@@ -92,7 +93,7 @@ export default function Home({ onLemon, onOther, onHistory, onAbout, online, off
 
       <div className="stat-grid">
         <div className="stat"><span className="stat-value">{models['lemon-v1']?.meta.classCount ?? 18}</span><span className="stat-label">Lemon conditions</span></div>
-        <div className="stat"><span className="stat-value">14</span><span className="stat-label">Other crops</span></div>
+        <div className="stat"><span className="stat-value">{PV_CROPS.length + 1}</span><span className="stat-label">Garden crops</span></div>
         <div className="stat"><span className="stat-value">0</span><span className="stat-label">Photos uploaded</span></div>
       </div>
 

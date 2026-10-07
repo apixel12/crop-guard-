@@ -44,6 +44,8 @@ class Config:
     unfreeze_from: int = 100
     finetune_lr: float = 1e-5  # peak LR for stage 2 (cosine-decayed)
     finetune_patience: int = 4
+    init_from: Path | None = None        # warm start from a trained checkpoint
+    init_classes: list[str] | None = None  # that checkpoint's class order (rows copied by name)
     batch: int = 32
     class_weights: bool = True
     dihedral_groups: bool = False  # group flipped/rotated copies as near-duplicates
@@ -267,6 +269,19 @@ def train(cfg: Config) -> None:
     train_ds = train_ds.map(to_train, num_parallel_calls=tf.data.AUTOTUNE).prefetch(tf.data.AUTOTUNE)
     val_ds = val_ds.map(lambda x, y: (x, tf.one_hot(y, n)))
     model, base = build_model(len(classes))
+    if cfg.init_from:
+        # Warm start: copy backbone weights and, for classes the old model
+        # already knew, their output-layer rows (matched by name).
+        old = tf.keras.models.load_model(str(cfg.init_from))
+        base.set_weights(old.get_layer(base.name).get_weights())
+        ow, ob = old.get_layer("probs").get_weights()
+        nw, nb = model.get_layer("probs").get_weights()
+        for j, c in enumerate(classes):
+            if c in (cfg.init_classes or []):
+                i = cfg.init_classes.index(c)
+                nw[:, j], nb[j] = ow[:, i], ob[i]
+        model.get_layer("probs").set_weights([nw, nb])
+        print(f"warm start from {cfg.init_from}: {sum(c in (cfg.init_classes or []) for c in classes)}/{len(classes)} class rows copied", flush=True)
     ck = cfg.work_dir / "checkpoints"
     ck.mkdir(exist_ok=True)
     best = str(ck / "best.keras")
@@ -372,6 +387,19 @@ def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
             for c in focus if c in classes
         }
     report["thresholds"] = thr
+    rows_all = list(csv.DictReader(open(cfg.work_dir / "splits.csv")))
+    test_rows = [r for r in rows_all if r["split"] == "test"]
+    if test_rows and "source" in test_rows[0]:
+        src = np.array([r["source"] for r in test_rows])
+        srt_t = np.sort(pt, 1)
+        conf_t = (srt_t[:, -1] >= thr["confidence"]) & (srt_t[:, -1] - srt_t[:, -2] >= thr["margin"])
+        corr_t = pt.argmax(1) == yt
+        report["bySource"] = {
+            s_: {"images": int((src == s_).sum()), "accuracy": float(corr_t[src == s_].mean()),
+                 "top3Accuracy": float(np.mean([yt[i] in np.argsort(-pt[i])[:3] for i in np.where(src == s_)[0]])),
+                 "confidentCoverage": float(conf_t[src == s_].mean()),
+                 "precisionWhenConfident": float(corr_t[(src == s_) & conf_t].mean()) if (conf_t & (src == s_)).any() else None}
+            for s_ in sorted(set(src))}
     report["priorCorrection"] = prior
     report["split"] = "test (held out; never used for training, early stopping or threshold tuning)"
     json.dump(report, open(cfg.work_dir / "metrics.json", "w"), indent=2)
