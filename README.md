@@ -152,15 +152,32 @@ Threshold: confidence ≥ 0.99, margin ≥ 0.0, chosen on validation for 99.0% p
 
 EXIF orientation: 594 test photos carry a rotation tag. Accuracy on them is 94.6% in raw orientation (as trained) vs 93.9% upright (as the browser shows them), so orientation does not materially change results.
 
-### PlantVillage
+### Garden crops (PlantVillage + beans)
 
-**PlantVillage model** (`plantvillage-v2`), held-out test split, 8,143 images:
+**Garden model** (`garden-v1`), held-out test split, 8,271 images:
 
 | Accuracy | Macro F1 | Weighted F1 | Top-3 | Confident coverage | Precision when confident |
 |---|---|---|---|---|---|
-| 94.4% | 92.6% | 94.4% | 99.2% | 84.6% | 99.2% |
+| 96.7% | 95.4% | 96.7% | 99.6% | 92.5% | 99.1% |
 
-Threshold: confidence ≥ 0.88, margin ≥ 0.78, chosen on validation for 99.0% precision. Below it the app says "Uncertain".
+Threshold: confidence ≥ 0.5, margin ≥ 0.66, chosen on validation for 99.0% precision. Below it the app says "Uncertain". Scores average each image with its mirror image (test-time augmentation), exactly as the app does.
+
+| Test source | Photos | Accuracy | Right when confident |
+|---|---|---|---|
+| ibean | 128 | 93.0% | 100.0% |
+| plantvillage | 8,143 | 96.7% | 99.1% |
+
+### Plant identification (one-button flow)
+
+**Plant identification** (`router-v1`), held-out test split, 6,350 images:
+
+| Accuracy | Macro F1 | Weighted F1 | Top-3 | Confident coverage | Precision when confident |
+|---|---|---|---|---|---|
+| 98.3% | 98.5% | 98.3% | 99.8% | 98.5% | 99.0% |
+
+Threshold: confidence ≥ 0.63, margin ≥ 0.34, chosen on validation for 99.0% precision. Below it the app says "Uncertain". Scores average each image with its mirror image (test-time augmentation), exactly as the app does.
+
+Background-shortcut test: 400 non-lemon test leaves pasted onto field-like clutter were sent to the lemon model 0.0% of the time (clean: 0.0%); 95.8% were routed to the right plant and 4.0% asked the user. When it isn't confident, the app asks which plant it is.
 
 Robustness training (v1 → v2), same generated stress data:
 

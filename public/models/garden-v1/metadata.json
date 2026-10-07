@@ -1,5 +1,5 @@
 {
-  "modelVersion": "plantvillage-v2",
+  "modelVersion": "garden-v1",
   "architecture": "MobileNetV2",
   "format": "tfjs_graph_model",
   "inputSize": [
@@ -13,13 +13,16 @@
     3
   ],
   "colorMode": "RGB",
-  "dataset": "PlantVillage (spMohanty/PlantVillage-Dataset, raw/color)",
-  "classCount": 38,
+  "dataset": "PlantVillage (lab) + PlantDoc (real-world, mapped to PlantVillage labels) + iBean (bean field photos)",
+  "classCount": 41,
   "classes": [
     "Apple___Apple_scab",
     "Apple___Black_rot",
     "Apple___Cedar_apple_rust",
     "Apple___healthy",
+    "Bean___Angular_leaf_spot",
+    "Bean___Bean_rust",
+    "Bean___healthy",
     "Blueberry___healthy",
     "Cherry_(including_sour)___Powdery_mildew",
     "Cherry_(including_sour)___healthy",
@@ -67,25 +70,25 @@
   },
   "trainingDate": "2026-10-06",
   "thresholds": {
-    "confidence": 0.88,
-    "margin": 0.78,
-    "precisionAccepted": 0.9900847822963069,
-    "coverage": 0.854599042122068,
+    "confidence": 0.5,
+    "margin": 0.66,
+    "precisionAccepted": 0.9900077861406696,
+    "coverage": 0.931126147897535,
     "targetPrecision": 0.99,
     "calibratedOn": "validation",
-    "testCoverage": 0.8461255065700601,
-    "testPrecisionAccepted": 0.9918722786647315
+    "testCoverage": 0.9245556764599202,
+    "testPrecisionAccepted": 0.990846083431411
   },
   "metrics": {
-    "accuracy": 0.9443693970281223,
-    "top3Accuracy": 0.9923860984895002,
-    "macroPrecision": 0.9320872266161735,
-    "macroRecall": 0.9269798310129289,
-    "macroF1": 0.9255875276745528,
-    "weightedF1": 0.9443310689897151,
+    "accuracy": 0.9668722040865675,
+    "top3Accuracy": 0.9955265385080402,
+    "macroPrecision": 0.9530030335623836,
+    "macroRecall": 0.9571181632978036,
+    "macroF1": 0.9535715017348445,
+    "weightedF1": 0.967049752157724,
     "evaluatedOn": "held-out test split",
-    "testImages": 8143
+    "testImages": 8271
   },
-  "license": "CC BY-SA 3.0 (PlantVillage)",
-  "normalizationNote": "Center crop added to the contract after training; every PlantVillage image is 256x256, so the crop is a no-op and the reported metrics are unchanged."
+  "license": "PlantVillage CC BY-SA 3.0; PlantDoc CC BY 4.0; iBean MIT",
+  "tta": "hflip"
 }

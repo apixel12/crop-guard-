@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 const sw = readFileSync('dist/sw.js', 'utf8')
 let missing = 0, total = 0
-for (const d of ['lemon-v1', 'plantvillage-v2']) {
+for (const d of ['router-v1', 'lemon-v1', 'garden-v1']) {
   const dir = `public/models/${d}`
   if (!existsSync(dir)) { console.warn(`! ${dir} missing`); missing++; continue }
   for (const f of readdirSync(dir)) {

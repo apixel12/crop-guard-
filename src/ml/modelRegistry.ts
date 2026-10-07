@@ -1,4 +1,4 @@
-export type ModelId = 'lemon-v1' | 'plantvillage-v2'
+export type ModelId = 'router-v1' | 'lemon-v1' | 'garden-v1'
 
 export interface Thresholds {
   confidence: number
@@ -32,8 +32,9 @@ export interface ModelMetadata {
 }
 
 export const MODELS: Record<ModelId, { label: string; base: string }> = {
+  'router-v1': { label: 'Plant identification', base: '/models/router-v1' },
   'lemon-v1': { label: 'Lemon', base: '/models/lemon-v1' },
-  'plantvillage-v2': { label: 'PlantVillage', base: '/models/plantvillage-v2' },
+  'garden-v1': { label: 'Garden', base: '/models/garden-v1' },
 }
 
 export const modelUrl = (id: ModelId) => `${MODELS[id].base}/model.json`

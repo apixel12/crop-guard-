@@ -12,8 +12,9 @@ const ModelCtx = createContext<Ctx | null>(null)
 
 export function ModelProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Record<ModelId, ModelState>>({
+    'router-v1': { status: 'loading' },
     'lemon-v1': { status: 'loading' },
-    'plantvillage-v2': { status: 'loading' },
+    'garden-v1': { status: 'loading' },
   })
   const [models, setModels] = useState<Partial<Record<ModelId, LoadedModel>>>({})
 
@@ -33,8 +34,9 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // lemon first: it is the primary demo path
+    load('router-v1')
     load('lemon-v1')
-    load('plantvillage-v2')
+    load('garden-v1')
   }, [])
 
   return <ModelCtx.Provider value={{ state, models, retry: load }}>{children}</ModelCtx.Provider>

@@ -39,13 +39,14 @@ export default function About({ onBack }: { onBack: () => void }) {
       <div style={{ display: 'grid', gap: 'var(--s2)' }}>
         <h1>How CropGuard works</h1>
         <p className="lede">
-          Two image models run inside your phone’s browser. Your photo is checked on the phone and never uploaded. There’s no account
+          Three image models run inside your phone’s browser: one works out which plant a leaf is from, and one checks it for problems. Your photo is checked on the phone and never uploaded. There’s no account
           and no tracking. When a model isn’t confident, it says so instead of guessing.
         </p>
       </div>
 
+      <ModelFacts id="router-v1" title="Plant identification" />
       <ModelFacts id="lemon-v1" title="Lemon model" />
-      <ModelFacts id="plantvillage-v2" title="Garden model" />
+      <ModelFacts id="garden-v1" title="Garden model" />
 
       <div className="panel">
         <section>
@@ -53,6 +54,7 @@ export default function About({ onBack }: { onBack: () => void }) {
           <ul className="bullets">
             <li>Lemon: Large-Scale Lemon Leaf Disease and Pest Image Dataset from Bangladesh, Mendeley Data, DOI 10.17632/8d9fv6kpt3.2 (CC BY 4.0). Duplicate photos were removed.</li>
             <li>Garden crops: PlantVillage, Hughes &amp; Salathé 2015 (CC BY-SA 3.0).</li>
+            <li>Beans: iBean, Makerere AI Lab with Uganda’s National Crops Resources Research Institute (MIT).</li>
             <li>Model: MobileNetV2 (Sandler et al. 2018). Typeface: Public Sans (SIL OFL). Icons: Phosphor (MIT).</li>
           </ul>
         </section>

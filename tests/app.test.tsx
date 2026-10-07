@@ -13,7 +13,7 @@ describe('camera fallback', () => {
       configurable: true,
       value: { getUserMedia: vi.fn().mockRejectedValue(new DOMException('denied', 'NotAllowedError')) },
     })
-    render(<Capture crop="Lemon" tips={["t"]} onBack={() => {}} onAnalyze={() => {}} />)
+    render(<Capture tips={["t"]} onBack={() => {}} onAnalyze={() => {}} />)
     expect(await screen.findByText('Camera not available')).toBeTruthy()
     const gallery = screen.getByText('Choose a photo')
     expect(gallery).toBeTruthy()
@@ -25,9 +25,9 @@ describe('model load failure', () => {
   it('shows Lemon AI unavailable and never claims offline readiness', async () => {
     const { ModelProvider } = await import('../src/hooks/useModels')
     const { default: Home } = await import('../src/components/Home')
-    render(<ModelProvider><Home onPick={() => {}} onHistory={() => {}} onAbout={() => {}} online offlineReady={false} conditionsPerCrop={{}} displayName={(_c, l) => l} /></ModelProvider>)
-    await waitFor(() => expect(screen.getByText('The lemon model couldn’t load.')).toBeTruthy())
+    render(<ModelProvider><Home onScan={() => {}} onHistory={() => {}} onAbout={() => {}} online offlineReady={false} displayName={(_c, l) => l} /></ModelProvider>)
+    await waitFor(() => expect(screen.getByText('Some of CropGuard didn’t download.')).toBeTruthy())
     expect(screen.queryByText(/works offline/)).toBeNull()
-    expect((screen.getByRole('button', { name: /^Lemon/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: /Check a leaf/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 })

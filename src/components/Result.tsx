@@ -19,12 +19,25 @@ const SEVERITY: Record<ConditionInfo['severity'], { text: string; cls: string }>
   regulated: { text: 'Must be reported in California', cls: 'attention' },
 }
 
+import type { Plant } from '../ml/router'
+
 interface Props {
   photo: string
   outcome: Outcome
+  plant: Plant | null
+  onChangePlant?: () => void
   onRetake: () => void
   onHome: () => void
   displayName: (label: string) => string
+}
+
+function PlantLine({ name, onChange }: { name: string; onChange?: () => void }) {
+  return (
+    <span className="plant-line">
+      <span className="crop">{name} leaf</span>
+      {onChange && <button className="text-link" onClick={onChange}>Not {name.toLowerCase()}? Change plant</button>}
+    </span>
+  )
 }
 
 function Ranked({ top, displayName }: { top: Prediction['top']; displayName: (l: string) => string }) {
@@ -40,7 +53,7 @@ function Ranked({ top, displayName }: { top: Prediction['top']; displayName: (l:
   )
 }
 
-export default function Result({ photo, outcome, onRetake, onHome, displayName }: Props) {
+export default function Result({ photo, outcome, onRetake, onHome, displayName, onChangePlant }: Props) {
   const p = outcome.kind === 'prediction' ? outcome : null
   const confident = p?.pred.status === 'confident'
   const info = p?.info
@@ -50,7 +63,7 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName }
   return (
     <section className="screen">
       <div className="topbar">
-        <button className="icon-btn back" onClick={onHome}><ArrowLeft size={20} aria-hidden />Plants</button>
+        <button className="icon-btn back" onClick={onHome}><ArrowLeft size={20} aria-hidden />Home</button>
         {p && <span className="caption">{p.pred.modelVersion} · on this phone</span>}
       </div>
       <img className="result-photo" src={photo} alt="The leaf that was checked" />
@@ -72,7 +85,7 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName }
 
       {p && !confident && (
         <div className="verdict">
-          <span className="crop">{p.cropName}</span>
+          <PlantLine name={p.cropName} onChange={onChangePlant} />
           <h1>Not sure about this one</h1>
           <span className="pill uncertain"><Question size={16} aria-hidden />Not confident enough to name a problem</span>
           <p className="lede">
@@ -90,7 +103,7 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName }
 
       {p && confident && (
         <div className="verdict">
-          <span className="crop">{p.cropName} leaf</span>
+          <PlantLine name={p.cropName} onChange={onChangePlant} />
           <h1>{healthy ? 'No problems spotted' : info?.name ?? displayName(p.pred.top[0].label)}</h1>
           {sev && (
             <span className={`pill ${sev.cls}`}>

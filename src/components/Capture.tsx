@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ArrowClockwise, ArrowLeft, ImageSquare } from '@phosphor-icons/react'
 
 interface Props {
-  crop: string
   tips: string[]
   onBack: () => void
   onAnalyze: (img: HTMLImageElement) => void
@@ -33,7 +32,7 @@ export function loadImage(blob: Blob): Promise<HTMLImageElement> {
   })
 }
 
-export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
+export default function Capture({ tips, onBack, onAnalyze }: Props) {
   const video = useRef<HTMLVideoElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const stream = useRef<MediaStream | null>(null)
@@ -150,7 +149,6 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
     <section className="screen capture">
       <div className="topbar">
         <button className="icon-btn back" onClick={() => { stop(); onBack() }}><ArrowLeft size={20} aria-hidden />Back</button>
-        <span className="caption">{crop}</span>
       </div>
 
       <div className="viewfinder">

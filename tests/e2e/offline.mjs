@@ -31,33 +31,38 @@ await page.getByText(/works offline|Everything still works/).waitFor({ timeout: 
 await page.screenshot({ path: 'test-results/2-home-offline.png' })
 
 // ---- lemon scan from gallery
-await page.getByRole('button', { name: /^Lemon/ }).click()
+await page.getByRole('button', { name: /Check a leaf/ }).click()
 await page.locator('input[type=file]').setInputFiles(process.env.E2E_PHOTO ?? 'tests/e2e/healthy-lemon.jpg')
 await page.getByRole('button', { name: 'Check this leaf' }).click()
-await page.locator('.verdict').waitFor({ timeout: 30000 })
+await page.locator('.verdict').waitFor({ timeout: 30000 }) // plant identified automatically, no picker
 const verdict = (await page.locator('.verdict').innerText()).split('\n').filter(Boolean).slice(0, 3).join(' | ')
 const meta = await page.locator('.fine-print').last().innerText()
 await page.screenshot({ path: 'test-results/3-result-offline.png', fullPage: true })
 
 // ---- camera capture path (Chrome fake camera), still offline
+const plantLine = await page.locator('.plant-line').innerText()
 await page.getByRole('button', { name: 'Check another leaf' }).click()
 await page.getByRole('button', { name: 'Take photo' }).waitFor({ timeout: 15000 })
 await page.screenshot({ path: 'test-results/4-camera.png' })
 await page.getByRole('button', { name: 'Take photo' }).click()
 await page.getByRole('button', { name: 'Check this leaf' }).click()
+// the fake camera shows a test pattern, not a plant: expect "Which plant is this?"
+await page.locator('.verdict, h1:has-text("Which plant is this?")').first().waitFor({ timeout: 30000 })
+const askedForPlant = await page.getByRole('heading', { name: 'Which plant is this?' }).isVisible()
+if (askedForPlant) await page.getByRole('button', { name: /^Lemon/ }).first().click()
 await page.locator('.verdict').waitFor({ timeout: 30000 })
 const cameraOutcome = (await page.locator('.verdict').innerText()).split('\n').filter(Boolean).slice(2, 5).join(' | ')
 
 // ---- history offline
-await page.getByRole('button', { name: 'Plants' }).click()
+await page.getByRole('button', { name: 'Home' }).click()
 await page.getByRole('button', { name: 'History' }).first().click()
 await page.locator('.list-row').first().waitFor({ timeout: 10000 })
 const historyCount = await page.locator('.list-row').count()
 await page.screenshot({ path: 'test-results/5-history.png' })
 
-console.log(JSON.stringify({ online, offline: { verdict, meta, cameraOutcome, historyCount,
+console.log(JSON.stringify({ online, offline: { verdict, plantLine, meta, askedForPlant, cameraOutcome, historyCount,
   requestsWhileOffline: [...new Set(offlineReq)].filter(u => !u.startsWith('blob:') && !u.startsWith('data:')) }, errors: log }, null, 2))
 await browser.close()
-const fail = !verdict || historyCount < 2 || log.length > 0
+const fail = !verdict || !/Lemon/.test(plantLine) || historyCount < 2 || log.length > 0
 if (fail) { console.error('E2E FAILED'); process.exit(1) }
 console.log('E2E PASSED')

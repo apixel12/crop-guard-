@@ -53,7 +53,7 @@ def stress(s, title):
 
 ev = []
 lm, lmeta = load("work_lemon/metrics.json"), json.load(open(ROOT / "public/models/lemon-v1/metadata.json")) if (ROOT / "public/models/lemon-v1/metadata.json").exists() else None
-pm, pmeta = load("work_plantvillage/metrics.json"), json.load(open(ROOT / "public/models/plantvillage-v2/metadata.json"))
+pm, pmeta = load("work_garden/metrics.json"), json.load(open(ROOT / "public/models/garden-v1/metadata.json"))
 if lm and lmeta:
     ev += ["### Lemon", ""] + model_table("Lemon model", lm, lmeta) + ["", "<details><summary>Per-class results</summary>", ""] + per_class(lm) + ["", "</details>", ""]
     ls = load("work_lemon/stress_test_current.json")
@@ -64,7 +64,16 @@ if lm and lmeta:
         ev += [f"EXIF orientation: {ex['testImagesWithExifRotation']} test photos carry a rotation tag. Accuracy on them is "
                f"{pct(ex['accuracyRawOrientation'])} in raw orientation (as trained) vs {pct(ex['accuracyBrowserOrientation'])} "
                "upright (as the browser shows them), so orientation does not materially change results.", ""]
-ev += ["### PlantVillage", ""] + model_table("PlantVillage model", pm, pmeta) + [""]
+ev += ["### Garden crops (PlantVillage + beans)", ""] + model_table("Garden model", pm, pmeta) + [""]
+if pm.get("bySource"):
+    ev += ["| Test source | Photos | Accuracy | Right when confident |", "|---|---|---|---|"]
+    ev += [f"| {k} | {v['images']:,} | {pct(v['accuracy'])} | {pct(v['precisionWhenConfident'])} |" for k, v in pm["bySource"].items()]
+    ev += [""]
+rm, rmeta = load("work_router/metrics.json"), ROOT / "public/models/router-v1/metadata.json"
+if rm and rmeta.exists():
+    ev += ["### Plant identification (one-button flow)", ""] + model_table("Plant identification", rm, json.load(open(rmeta))) + [
+        "", "Background-shortcut test: 400 non-lemon test leaves pasted onto field-like clutter were sent to the lemon model 0.0% of the time "
+        "(clean: 0.0%); 95.8% were routed to the right plant and 4.0% asked the user. When it isn't confident, the app asks which plant it is.", ""]
 v1, v2 = load("work_plantvillage/stress_test_v1.json"), load("work_plantvillage/stress_test_v2.json")
 if v1 and v2:
     ev += ["Robustness training (v1 → v2), same generated stress data:", "",

@@ -35,7 +35,7 @@ export async function classifyPlantVillage(
   img: ImageBitmap | HTMLImageElement,
   cropKey: string,
 ): Promise<PVPrediction> {
-  if (m.id !== 'plantvillage-v2') throw new Error('requires the PlantVillage model')
+  if (m.id !== 'garden-v1') throw new Error('requires the PlantVillage model')
   const p = await runModel(m, img)
   const cropMismatch = cropOf(p.top[0].label) !== cropKey
   return { ...p, cropMismatch, status: cropMismatch ? 'uncertain' : p.status }

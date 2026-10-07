@@ -7,7 +7,7 @@ import securityHeaders from './security-headers.json' with { type: 'json' }
 
 // Explicitly enumerate every model file so each shard is precached by name
 // (a "/models/" prefix alone does not guarantee shards are cached).
-const MODEL_DIRS = ['lemon-v1', 'plantvillage-v2']
+const MODEL_DIRS = ['router-v1', 'lemon-v1', 'garden-v1']
 const modelFiles = MODEL_DIRS.flatMap((d) => {
   const dir = `public/models/${d}`
   return existsSync(dir)

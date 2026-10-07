@@ -16,7 +16,7 @@ const base: ModelMetadata = {
 describe('metadata validation', () => {
   it('accepts consistent metadata', () => expect(() => validateMetadata(base, 'lemon-v1')).not.toThrow())
   it('rejects class count mismatch', () => expect(() => validateMetadata({ ...base, classCount: 3 }, 'lemon-v1')).toThrow(/classCount/))
-  it('rejects wrong model id', () => expect(() => validateMetadata(base, 'plantvillage-v2')).toThrow())
+  it('rejects wrong model id', () => expect(() => validateMetadata(base, 'garden-v1')).toThrow())
   it('rejects missing thresholds', () =>
     expect(() => validateMetadata({ ...base, thresholds: undefined as never }, 'lemon-v1')).toThrow(/threshold/))
   it('rejects external normalization', () =>
@@ -29,7 +29,7 @@ describe('disease data covers every model class', () => {
 
   for (const [dir, lookup, n] of [
     ['lemon-v1', (l: string) => lemonInfo(l), 18],
-    ['plantvillage-v2', (l: string) => PLANTVILLAGE_CONDITIONS[l], 38],
+    ['garden-v1', (l: string) => PLANTVILLAGE_CONDITIONS[l], 41],
   ] as const) {
     const p = `public/models/${dir}/metadata.json`
     it.skipIf(!existsSync(p))(`${dir}: every exported class has info and count is ${n}`, () => {
@@ -42,4 +42,15 @@ describe('disease data covers every model class', () => {
       validateMetadata(meta, dir)
     })
   }
+})
+
+describe('plant identification routes every plant to a disease model', () => {
+  const p = 'public/models/router-v1/metadata.json'
+  it.skipIf(!existsSync(p))('each router class maps to lemon or a garden crop', async () => {
+    const { plantFromName } = await import('../src/ml/router')
+    const meta = JSON.parse(readFileSync(p, 'utf8')) as ModelMetadata
+    const unmapped = meta.classes.filter((c) => !plantFromName(c))
+    expect(unmapped).toEqual([])
+    expect(meta.classes).toContain('Lemon')
+  })
 })

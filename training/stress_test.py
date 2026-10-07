@@ -25,7 +25,7 @@ from shared.seed import set_seed  # noqa: E402
 name = sys.argv[1]
 per_class = int(sys.argv[2]) if len(sys.argv) > 2 else 20
 work = ROOT / "data" / f"work_{name}"
-meta_dir = {"plantvillage": "plantvillage-v2", "lemon": "lemon-v1"}[name]  # current shipped versions
+meta_dir = {"plantvillage": "garden-v1", "garden": "garden-v1", "lemon": "lemon-v1", "router": "router-v1"}[name]  # current shipped versions
 meta = json.load(open(ROOT / "public" / "models" / meta_dir / "metadata.json"))
 T = meta["thresholds"]
 classes = meta["classes"]
