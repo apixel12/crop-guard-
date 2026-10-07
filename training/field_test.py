@@ -43,6 +43,10 @@ for p in photos:
     probs = model.predict(x[None], verbose=0)[0]
     if meta.get("tta") == "hflip":  # same inference as the app
         probs = (probs + model.predict(tf.reverse(x, [1])[None], verbose=0)[0]) / 2
+    pc = meta.get("priorCorrection")
+    if pc:  # logit adjustment, as in the app
+        probs = probs * np.array(pc["classWeights"]) ** (-pc["alpha"])
+        probs = probs / probs.sum()
     order = np.argsort(-probs)[:3]
     top1, top2 = probs[order[0]], probs[order[1]]
     confident = top1 >= T["confidence"] and (top1 - top2) >= T["margin"]

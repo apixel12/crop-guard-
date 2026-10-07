@@ -52,6 +52,10 @@ def predict(x):
     p = model.predict(x, batch_size=64, verbose=0)
     if meta.get("tta") == "hflip":
         p = (p + model.predict(x[:, :, ::-1, :].copy(), batch_size=64, verbose=0)) / 2
+    pc = meta.get("priorCorrection")
+    if pc:  # logit adjustment, as in the app
+        p = p * np.array(pc["classWeights"]) ** (-pc["alpha"])
+        p = p / p.sum(1, keepdims=True)
     return p
 base = np.stack([load_image(tf.constant(p)).numpy() for p in paths])  # [N,224,224,3] 0..255
 

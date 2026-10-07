@@ -49,27 +49,27 @@
   "thresholds": {
     "confidence": 0.99,
     "margin": 0.0,
-    "precisionAccepted": 0.9929435483870968,
-    "coverage": 0.4440465532676813,
+    "precisionAccepted": 0.9959636730575177,
+    "coverage": 0.44359892569382275,
     "targetPrecision": 0.99,
     "calibratedOn": "validation",
     "testCoverage": 0.4494180841539839,
-    "testPrecisionAccepted": 0.9920318725099602
+    "testPrecisionAccepted": 0.9910358565737052
   },
   "metrics": {
-    "accuracy": 0.833930170098478,
-    "top3Accuracy": 0.964189794091316,
-    "macroPrecision": 0.7936125676751588,
-    "macroRecall": 0.7725447910991932,
-    "macroF1": 0.775246527878383,
-    "weightedF1": 0.8300955070628321,
+    "accuracy": 0.8303491495076096,
+    "top3Accuracy": 0.9637421665174575,
+    "macroPrecision": 0.7806435527555494,
+    "macroRecall": 0.8156263901621721,
+    "macroF1": 0.7852381082111511,
+    "weightedF1": 0.8304736919305513,
     "evaluatedOn": "held-out test split",
     "testImages": 2234
   },
   "license": "CC BY 4.0",
   "tta": "hflip",
   "priorCorrection": {
-    "alpha": 1.2,
+    "alpha": 0.5,
     "classWeights": [
       0.9546036976020501,
       0.9821092278719398,

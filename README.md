@@ -97,7 +97,7 @@ Softmax confidence is not a probability of being right. The threshold is calibra
 
 | Accuracy | Macro F1 | Weighted F1 | Top-3 | Confident coverage | Precision when confident |
 |---|---|---|---|---|---|
-| 83.4% | 77.5% | 83.0% | 96.4% | 44.9% | 99.2% |
+| 83.0% | 78.5% | 83.0% | 96.4% | 44.9% | 99.1% |
 
 Threshold: confidence ≥ 0.99, margin ≥ 0.0, chosen on validation for 99.0% precision. Below it the app says "Uncertain". Scores average each image with its mirror image (test-time augmentation), exactly as the app does.
 
@@ -107,22 +107,22 @@ Threshold: confidence ≥ 0.99, margin ≥ 0.0, chosen on validation for 99.0% p
 |---|---|---|---|---|
 | Citrus_Scab | 100.0% | 100.0% | 100.0% | 48 |
 | Lemon_Sooty_Mold | 98.8% | 99.6% | 99.2% | 239 |
-| Algal_Leaf_Spot | 98.5% | 99.2% | 98.9% | 130 |
-| Citrus_Pest | 98.7% | 94.0% | 96.3% | 83 |
-| Yellow_Spot | 93.5% | 97.1% | 95.2% | 103 |
-| Healthy | 82.9% | 96.7% | 89.3% | 245 |
-| Black Spot | 95.5% | 80.0% | 87.0% | 105 |
-| Citrus Canker | 90.3% | 83.4% | 86.7% | 223 |
-| Citrus Hindu Mite | 86.2% | 85.2% | 85.7% | 81 |
-| Curl Leaf | 71.6% | 86.5% | 78.3% | 230 |
-| Swallowtail Larval Herbivory (Deficiency) | 71.0% | 82.8% | 76.5% | 151 |
-| Greening | 74.5% | 72.2% | 73.3% | 259 |
-| Anthracnose | 77.6% | 65.4% | 70.9% | 127 |
-| Dry Leaf | 72.0% | 64.3% | 67.9% | 28 |
-| Citrus Leafminer | 77.3% | 43.6% | 55.7% | 117 |
-| Melanose | 58.3% | 50.0% | 53.8% | 28 |
-| Spider Mites | 41.9% | 68.4% | 52.0% | 19 ⚠︎ few images |
-| Bacterial Blight | 40.0% | 22.2% | 28.6% | 18 ⚠︎ few images |
+| Algal_Leaf_Spot | 97.7% | 100.0% | 98.9% | 130 |
+| Citrus_Pest | 97.6% | 96.4% | 97.0% | 83 |
+| Yellow_Spot | 87.0% | 97.1% | 91.7% | 103 |
+| Healthy | 86.2% | 96.7% | 91.2% | 245 |
+| Black Spot | 95.6% | 81.9% | 88.2% | 105 |
+| Citrus Hindu Mite | 85.4% | 86.4% | 85.9% | 81 |
+| Citrus Canker | 91.8% | 75.8% | 83.0% | 223 |
+| Curl Leaf | 74.7% | 82.2% | 78.3% | 230 |
+| Swallowtail Larval Herbivory (Deficiency) | 72.8% | 83.4% | 77.8% | 151 |
+| Dry Leaf | 68.6% | 85.7% | 76.2% | 28 |
+| Greening | 79.6% | 66.4% | 72.4% | 259 |
+| Anthracnose | 73.3% | 69.3% | 71.3% | 127 |
+| Citrus Leafminer | 75.3% | 47.0% | 57.9% | 117 |
+| Melanose | 42.5% | 60.7% | 50.0% | 28 |
+| Bacterial Blight | 47.4% | 50.0% | 48.6% | 18 ⚠︎ few images |
+| Spider Mites | 30.9% | 89.5% | 45.9% | 19 ⚠︎ few images |
 
 </details>
 
@@ -130,18 +130,18 @@ Threshold: confidence ≥ 0.99, margin ≥ 0.0, chosen on validation for 99.0% p
 
 | Condition | Accuracy | Confidently wrong |
 |---|---|---|
-| clean | 83.3% | 0.6% |
-| dim light (x0.45) | 74.4% | 0.0% |
-| overexposed (x1.6) | 85.6% | 0.6% |
-| warm white balance | 82.2% | 0.6% |
-| gaussian blur | 60.6% | 0.0% |
-| motion blur | 56.7% | 0.0% |
-| sensor noise | 81.1% | 0.0% |
-| jpeg q=20 | 79.4% | 0.0% |
-| low resolution (48px) | 70.6% | 0.0% |
+| clean | 81.1% | 0.6% |
+| dim light (x0.45) | 73.9% | 0.0% |
+| overexposed (x1.6) | 82.2% | 0.0% |
+| warm white balance | 80.0% | 0.6% |
+| gaussian blur | 55.0% | 0.0% |
+| motion blur | 50.0% | 0.0% |
+| sensor noise | 76.7% | 0.0% |
+| jpeg q=20 | 75.0% | 0.0% |
+| low resolution (48px) | 66.1% | 0.0% |
 | rotated 90° | 82.8% | 0.0% |
-| corner occluded/shadow | 80.0% | 0.6% |
-| leaf far away on clutter (55%) | 53.9% | 0.6% |
+| corner occluded/shadow | 78.3% | 0.6% |
+| leaf far away on clutter (55%) | 51.7% | 0.6% |
 
 | Not-a-leaf input | Flagged uncertain |
 |---|---|

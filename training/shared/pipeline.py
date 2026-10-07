@@ -323,9 +323,11 @@ def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
     yt, pt = out["test"]
     # Post-hoc logit adjustment (Menon et al., ICLR 2021): class-weighted
     # training over-predicts rare classes; dividing probabilities by
-    # weight**alpha undoes that. alpha is chosen on VALIDATION macro F1 and
-    # shipped in metadata so the browser applies the identical correction.
-    from sklearn.metrics import f1_score
+    # weight**alpha undoes that. alpha is chosen on VALIDATION to maximise the
+    # mean of macro F1 and balanced accuracy: macro F1 alone picked 1.2, which
+    # cut Bacterial Blight recall from 61% to 22%. Shipped in metadata so the
+    # browser applies the identical correction.
+    from sklearn.metrics import balanced_accuracy_score, f1_score
     hist = json.load(open(cfg.work_dir / "history.json"))
     cw = hist.get("classWeights")
     prior = None
@@ -336,7 +338,11 @@ def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
             q = p * w ** (-a)
             return q / q.sum(1, keepdims=True)
 
-        alpha = max(np.round(np.arange(0, 1.61, 0.1), 2), key=lambda a: f1_score(yv, adjust(pv, a).argmax(1), average="macro"))
+        def objective(a):
+            pred = adjust(pv, a).argmax(1)
+            return 0.5 * f1_score(yv, pred, average="macro") + 0.5 * balanced_accuracy_score(yv, pred)
+
+        alpha = max(np.round(np.arange(0, 1.61, 0.1), 2), key=objective)
         if alpha > 0:
             pv, pt = adjust(pv, alpha), adjust(pt, alpha)
             prior = {"alpha": float(alpha), "classWeights": w.tolist(),
