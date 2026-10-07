@@ -8,11 +8,23 @@ interface Props {
   onAnalyze: (img: HTMLImageElement) => void
 }
 
+/** Larger than any phone camera (200 MP); guards against decompression-bomb files. */
+export const MAX_IMAGE_PIXELS = 200_000_000
+const MAX_FILE_BYTES = 60 * 1024 * 1024
+
 export function loadImage(blob: Blob): Promise<HTMLImageElement> {
+  if (blob.size > MAX_FILE_BYTES) return Promise.reject(new Error('That file is too large. Choose a normal photo.'))
+  if (blob.type && !blob.type.startsWith('image/')) return Promise.reject(new Error('That file isn’t a photo.'))
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(blob)
     const img = new Image()
-    img.onload = () => res(img) // browsers apply EXIF orientation for <img>
+    img.onload = () => {
+      // browsers apply EXIF orientation for <img>
+      if (img.naturalWidth * img.naturalHeight > MAX_IMAGE_PIXELS || !img.naturalWidth) {
+        URL.revokeObjectURL(url)
+        rej(new Error('That image is too large or empty. Choose a normal photo.'))
+      } else res(img)
+    }
     img.onerror = () => {
       URL.revokeObjectURL(url)
       rej(new Error('That file could not be read as an image.'))
@@ -71,6 +83,19 @@ export default function Capture({ crop, tips, onBack, onAnalyze }: Props) {
       if (alive.current) setCam('unavailable')
     }
   }
+
+  // Privacy: release the camera whenever the app is hidden (app switch, lock
+  // screen), and turn it back on when the user returns to the viewfinder.
+  const shotRef = useRef<HTMLImageElement | null>(null)
+  shotRef.current = shot
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) stop()
+      else if (!shotRef.current && !stream.current && alive.current) start()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
 
   useEffect(() => {
     alive.current = true

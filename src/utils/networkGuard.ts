@@ -10,10 +10,17 @@ export interface NetEntry {
 export const netLog: NetEntry[] = []
 
 export function installNetworkGuard() {
-  const qs = new URLSearchParams(location.search)
-  if (qs.get('netlog') === '1') localStorage.setItem('cg-netlog', '1')
-  if (qs.get('netlog') === '0') localStorage.removeItem('cg-netlog')
-  if (localStorage.getItem('cg-netlog') !== '1') return false
+  // Development instrumentation only: never shipped behaviour that a crafted
+  // link (?netlog=1) could switch on in production.
+  if (!import.meta.env.DEV) return false
+  try {
+    const qs = new URLSearchParams(location.search)
+    if (qs.get('netlog') === '1') localStorage.setItem('cg-netlog', '1')
+    if (qs.get('netlog') === '0') localStorage.removeItem('cg-netlog')
+    if (localStorage.getItem('cg-netlog') !== '1') return false
+  } catch {
+    return false // storage blocked (private mode / disabled): never break startup
+  }
 
   const origFetch = window.fetch.bind(window)
   window.fetch = (input, init) => {

@@ -3,6 +3,7 @@ import { readdirSync, existsSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import securityHeaders from './security-headers.json' with { type: 'json' }
 
 // Explicitly enumerate every model file so each shard is precached by name
 // (a "/models/" prefix alone does not guarantee shards are cached).
@@ -42,6 +43,8 @@ export default defineConfig({
       },
     }),
   ],
+  // same headers as production (vercel.json), so the CSP is exercised before deploy
+  preview: { headers: securityHeaders },
   test: {
     environment: 'jsdom',
     setupFiles: ['tests/setup.ts'],
