@@ -213,6 +213,8 @@ npm install
 npm run dev          # http://localhost:5173
 npm test             # unit + integration tests
 npm run build        # production build + precache verification
+npx vite preview &   # serve the build on :4173
+npm run test:e2e     # offline acceptance test in real Chrome (airplane mode, gallery + camera, history)
 ```
 
 Training (Python 3.12, Apple Silicon GPU via tensorflow-metal):
