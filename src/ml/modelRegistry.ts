@@ -27,6 +27,8 @@ export interface ModelMetadata {
   license: string
   /** test-time augmentation used when calibrating thresholds */
   tta?: 'hflip'
+  /** logit adjustment for class-weighted training, applied after softmax */
+  priorCorrection?: { alpha: number; classWeights: number[] }
 }
 
 export const MODELS: Record<ModelId, { label: string; base: string }> = {

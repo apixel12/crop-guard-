@@ -1,0 +1,95 @@
+{
+  "modelVersion": "lemon-v1",
+  "architecture": "MobileNetV2",
+  "format": "tfjs_graph_model",
+  "inputSize": [
+    224,
+    224
+  ],
+  "inputShape": [
+    1,
+    224,
+    224,
+    3
+  ],
+  "colorMode": "RGB",
+  "dataset": "Large-Scale Lemon Leaf Disease and Pest Image Dataset from Bangladesh (Mendeley Data, DOI 10.17632/8d9fv6kpt3.2)",
+  "classCount": 18,
+  "classes": [
+    "Algal_Leaf_Spot",
+    "Anthracnose",
+    "Bacterial Blight",
+    "Black Spot",
+    "Citrus Canker",
+    "Citrus Hindu Mite",
+    "Citrus Leafminer",
+    "Citrus_Pest",
+    "Citrus_Scab",
+    "Curl Leaf",
+    "Dry Leaf",
+    "Greening",
+    "Healthy",
+    "Lemon_Sooty_Mold",
+    "Melanose",
+    "Spider Mites",
+    "Swallowtail Larval Herbivory (Deficiency)",
+    "Yellow_Spot"
+  ],
+  "normalization": {
+    "inputRange": [
+      0,
+      255
+    ],
+    "inModel": true,
+    "formula": "pixel / 127.5 - 1",
+    "resize": "center square crop (floor offsets), then bilinear 224x224, half-pixel centers",
+    "channelOrder": "RGB"
+  },
+  "trainingDate": "2026-10-06",
+  "thresholds": {
+    "confidence": 0.99,
+    "margin": 0.0,
+    "precisionAccepted": 0.9929435483870968,
+    "coverage": 0.4440465532676813,
+    "targetPrecision": 0.99,
+    "calibratedOn": "validation",
+    "testCoverage": 0.4494180841539839,
+    "testPrecisionAccepted": 0.9920318725099602
+  },
+  "metrics": {
+    "accuracy": 0.833930170098478,
+    "top3Accuracy": 0.964189794091316,
+    "macroPrecision": 0.7936125676751588,
+    "macroRecall": 0.7725447910991932,
+    "macroF1": 0.775246527878383,
+    "weightedF1": 0.8300955070628321,
+    "evaluatedOn": "held-out test split",
+    "testImages": 2234
+  },
+  "license": "CC BY 4.0",
+  "tta": "hflip",
+  "priorCorrection": {
+    "alpha": 1.2,
+    "classWeights": [
+      0.9546036976020501,
+      0.9821092278719398,
+      6.816993464052287,
+      1.189824321241159,
+      0.559849704777241,
+      1.520851560221639,
+      1.0770342833539859,
+      1.5329218106995885,
+      2.434640522875817,
+      0.5340501792114696,
+      4.356725146198831,
+      0.4749544626593807,
+      0.5051826019567955,
+      0.5201476161978855,
+      4.457264957264957,
+      6.660280970625799,
+      0.8195819581958196,
+      1.2381291547958215
+    ],
+    "method": "p * w**-alpha, renormalised (logit adjustment)"
+  }
+}

@@ -321,6 +321,26 @@ def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
         out[split] = (y, probs)
     yv, pv = out["val"]
     yt, pt = out["test"]
+    # Post-hoc logit adjustment (Menon et al., ICLR 2021): class-weighted
+    # training over-predicts rare classes; dividing probabilities by
+    # weight**alpha undoes that. alpha is chosen on VALIDATION macro F1 and
+    # shipped in metadata so the browser applies the identical correction.
+    from sklearn.metrics import f1_score
+    hist = json.load(open(cfg.work_dir / "history.json"))
+    cw = hist.get("classWeights")
+    prior = None
+    if cw:
+        w = np.array([cw[str(i)] if str(i) in cw else cw[i] for i in range(len(classes))], np.float64)
+
+        def adjust(p, a):
+            q = p * w ** (-a)
+            return q / q.sum(1, keepdims=True)
+
+        alpha = max(np.round(np.arange(0, 1.61, 0.1), 2), key=lambda a: f1_score(yv, adjust(pv, a).argmax(1), average="macro"))
+        if alpha > 0:
+            pv, pt = adjust(pv, alpha), adjust(pt, alpha)
+            prior = {"alpha": float(alpha), "classWeights": w.tolist(),
+                     "method": "p * w**-alpha, renormalised (logit adjustment)"}
     report = full_report(yt, pt, classes)
     thr = calibrate_thresholds_stepped(yv, pv)
     if thr is None:
@@ -346,6 +366,7 @@ def evaluate(cfg: Config, focus: list[str] | None = None) -> None:
             for c in focus if c in classes
         }
     report["thresholds"] = thr
+    report["priorCorrection"] = prior
     report["split"] = "test (held out; never used for training, early stopping or threshold tuning)"
     json.dump(report, open(cfg.work_dir / "metrics.json", "w"), indent=2)
     print(json.dumps({k: report[k] for k in ("accuracy", "top3Accuracy", "macroF1", "weightedF1")}, indent=2))
@@ -389,5 +410,7 @@ def export(cfg: Config, out_dir: Path) -> None:
         "license": cfg.license,
         "tta": "hflip",  # average of the image and its horizontal mirror
     }
+    if m.get("priorCorrection"):
+        meta["priorCorrection"] = m["priorCorrection"]
     json.dump(meta, open(out_dir / "metadata.json", "w"), indent=2)
     print("exported", out_dir, sorted(os.listdir(out_dir)))

@@ -3,6 +3,16 @@ import { assess, type Assessment } from './confidence'
 import type { LoadedModel } from './modelLoader'
 import { toInputTensor } from './preprocess'
 
+/** Same correction training's evaluate() applied before calibrating thresholds. */
+export function applyPriorCorrection(p: ArrayLike<number>, pc?: { alpha: number; classWeights: number[] }): Float32Array {
+  const q = Float32Array.from(p)
+  if (!pc || !pc.alpha) return q
+  let sum = 0
+  for (let i = 0; i < q.length; i++) sum += (q[i] *= Math.pow(pc.classWeights[i], -pc.alpha))
+  for (let i = 0; i < q.length; i++) q[i] /= sum
+  return q
+}
+
 export interface Prediction extends Assessment {
   modelVersion: string
   inferenceMs: number
@@ -19,7 +29,7 @@ export async function runModel(m: LoadedModel, img: ImageBitmap | HTMLImageEleme
     return tf.div(tf.add(p, flipped), 2)
   })
   try {
-    const probs = await out.data()
+    const probs = applyPriorCorrection(await out.data(), m.meta.priorCorrection)
     return { ...assess(probs, m.meta.classes, m.meta.thresholds), modelVersion: m.meta.modelVersion, inferenceMs: performance.now() - t0 }
   } finally {
     input.dispose()

@@ -91,6 +91,67 @@ Softmax confidence is not a probability of being right. The threshold is calibra
 ## Evaluation
 
 <!-- EVALUATION -->
+### Lemon
+
+**Lemon model** (`lemon-v1`), held-out test split, 2,234 images:
+
+| Accuracy | Macro F1 | Weighted F1 | Top-3 | Confident coverage | Precision when confident |
+|---|---|---|---|---|---|
+| 83.4% | 77.5% | 83.0% | 96.4% | 44.9% | 99.2% |
+
+Threshold: confidence ≥ 0.99, margin ≥ 0.0, chosen on validation for 99.0% precision. Below it the app says "Uncertain". Scores average each image with its mirror image (test-time augmentation), exactly as the app does.
+
+<details><summary>Per-class results</summary>
+
+| Class | Precision | Recall | F1 | Test images |
+|---|---|---|---|---|
+| Citrus_Scab | 100.0% | 100.0% | 100.0% | 48 |
+| Lemon_Sooty_Mold | 98.8% | 99.6% | 99.2% | 239 |
+| Algal_Leaf_Spot | 98.5% | 99.2% | 98.9% | 130 |
+| Citrus_Pest | 98.7% | 94.0% | 96.3% | 83 |
+| Yellow_Spot | 93.5% | 97.1% | 95.2% | 103 |
+| Healthy | 82.9% | 96.7% | 89.3% | 245 |
+| Black Spot | 95.5% | 80.0% | 87.0% | 105 |
+| Citrus Canker | 90.3% | 83.4% | 86.7% | 223 |
+| Citrus Hindu Mite | 86.2% | 85.2% | 85.7% | 81 |
+| Curl Leaf | 71.6% | 86.5% | 78.3% | 230 |
+| Swallowtail Larval Herbivory (Deficiency) | 71.0% | 82.8% | 76.5% | 151 |
+| Greening | 74.5% | 72.2% | 73.3% | 259 |
+| Anthracnose | 77.6% | 65.4% | 70.9% | 127 |
+| Dry Leaf | 72.0% | 64.3% | 67.9% | 28 |
+| Citrus Leafminer | 77.3% | 43.6% | 55.7% | 117 |
+| Melanose | 58.3% | 50.0% | 53.8% | 28 |
+| Spider Mites | 41.9% | 68.4% | 52.0% | 19 ⚠︎ few images |
+| Bacterial Blight | 40.0% | 22.2% | 28.6% | 18 ⚠︎ few images |
+
+</details>
+
+**Lemon stress test**, generated from held-out test images (see `training/stress_test.py`):
+
+| Condition | Accuracy | Confidently wrong |
+|---|---|---|
+| clean | 83.3% | 0.6% |
+| dim light (x0.45) | 74.4% | 0.0% |
+| overexposed (x1.6) | 85.6% | 0.6% |
+| warm white balance | 82.2% | 0.6% |
+| gaussian blur | 60.6% | 0.0% |
+| motion blur | 56.7% | 0.0% |
+| sensor noise | 81.1% | 0.0% |
+| jpeg q=20 | 79.4% | 0.0% |
+| low resolution (48px) | 70.6% | 0.0% |
+| rotated 90° | 82.8% | 0.0% |
+| corner occluded/shadow | 80.0% | 0.6% |
+| leaf far away on clutter (55%) | 53.9% | 0.6% |
+
+| Not-a-leaf input | Flagged uncertain |
+|---|---|
+| uniform colour | 100.0% |
+| random noise | 100.0% |
+| clutter texture only | 100.0% |
+| gradients | 100.0% |
+
+EXIF orientation: 594 test photos carry a rotation tag. Accuracy on them is 94.6% in raw orientation (as trained) vs 93.9% upright (as the browser shows them), so orientation does not materially change results.
+
 ### PlantVillage
 
 **PlantVillage model** (`plantvillage-v2`), held-out test split, 8,143 images:
