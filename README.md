@@ -1,7 +1,7 @@
 # CropGuard
 
 **Offline plant-leaf disease screening that runs entirely on your phone.**
-Take a photo of a leaf; a model on the device identifies the likely condition, says how confident it is, explains what the condition means, and suggests conservative next steps. No upload, no account, no signal needed after the first visit.
+Take a photo of a leaf. CropGuard works out which plant it is, then a model on the device identifies the likely condition, says how confident it is, explains what the condition means, and suggests conservative next steps. No upload, no account, no signal needed after the first visit.
 
 Built for Impact Hacks 2026.
 
@@ -11,16 +11,17 @@ Built for Impact Hacks 2026.
 
 ## The problem
 
-Identifying plant disease early means recognising symptoms from what a leaf looks like. The people who most need that (backyard growers, small farms, school gardens) often don't have an expert nearby, and many photo-ID tools send your images to a server and need a good connection, which fields and orchards often lack.
+Identifying plant disease early means recognising symptoms from what a leaf looks like. The people who most need that (home gardeners above all; also small growers and school gardens) often don't have an expert nearby, and many photo-ID tools send your images to a server and need a good connection, which fields and orchards often lack.
 
 ## What CropGuard does
 
 | | |
 |---|---|
-| **Lemon model** | 18 lemon-leaf conditions, trained on real orchard photos (the primary path) |
-| **PlantVillage model** | 38 conditions across 14 other crops |
+| **One button** | "Check a leaf": a plant-identification model picks the right disease model; if it isn't sure, it asks |
+| **Lemon model** | 18 lemon-leaf conditions, trained on real orchard photos |
+| **Garden model** | 41 conditions across 15 garden crops (tomato, pepper, bean, squash, potato, strawberry and more), ordered by how often home gardeners grow them |
 | **On-device** | TensorFlow.js in the browser; photos never leave the phone |
-| **Offline** | Installable PWA; app and both models are cached on first visit |
+| **Offline** | Installable PWA; the app and all three models are cached on first visit |
 | **Honest uncertainty** | Calibrated threshold; below it the app says "Uncertain", not a guess |
 | **Photo-quality gate** | Rejects dark, overexposed, blurry and leaf-less photos before inference |
 | **Local history** | Scans saved in IndexedDB on the device, each with its model version |
@@ -31,12 +32,14 @@ Identifying plant disease early means recognising symptoms from what a leaf look
 Camera / gallery photo
         │
         ▼
-Photo-quality gate ──(fails)──► "Photo quality too low" + how to fix
+Photo-quality gate ──(fails)──► "The photo needs retaking" + how to fix
         │
         ▼
-User picks crop path ─── Lemon ───► lemon-v1 (18 classes)
+Plant identification (router-v1, 16 plants) ──(not confident)──► "Which plant is this?" (user picks)
+        │
+        ├── Lemon ─────────► lemon-v1 (18 classes)
         │                                 │
-        └── Other crop ──► plantvillage-v1 (38 classes, crop must match)
+        └── Garden crop ──► garden-v1 (41 classes, crop must match)
                                           │
                                           ▼
                  Calibrated confidence threshold ──(below)──► "Uncertain result"
@@ -45,7 +48,7 @@ User picks crop path ─── Lemon ───► lemon-v1 (18 classes)
           Result + static, reviewed condition info + next steps → saved locally
 ```
 
-Two separate classifiers, never one merged label space: the datasets have different classes, and **PlantVillage contains no lemon**. A lemon leaf is never routed to the PlantVillage "Orange" class. If a PlantVillage prediction belongs to a different crop than the user selected, the result is forced to "Uncertain".
+Separate disease classifiers, never one merged label space: the datasets have different classes, and **PlantVillage contains no lemon**. A lemon leaf is never routed to the PlantVillage "Orange" class. If a garden prediction belongs to a different crop than the plant chosen, the result is forced to "Uncertain". Every result shows the plant with a "Change plant" link that re-checks the same photo.
 
 ### Preprocessing contract (training ⇄ browser)
 
@@ -53,7 +56,7 @@ Defined once in `training/shared/preprocessing.py` and mirrored in `src/ml/prepr
 
 1. Decode; JPEGs use the **accurate integer DCT**, as browsers do (TF's fast default shifted borderline predictions by up to 0.17 in our parity test).
 2. RGB, alpha dropped.
-3. Resize the **whole image** to 224×224, bilinear, half-pixel centres, no crop.
+3. Center-crop to a square (the camera shows exactly this square), then resize to 224×224, bilinear, half-pixel centres. The crop removes aspect ratio as a shortcut: several lemon classes came from a single camera format.
 4. Float32 in [0, 255]. Normalisation (`x / 127.5 − 1`) is a layer **inside** the model, so the browser can't apply the wrong one.
 
 The browser does the bilinear resize on the CPU, which reads only 224×224×4 source pixels, instead of uploading a 12-megapixel camera frame to WebGL (which exceeds texture limits on many phones). Tests check it against Python's `tf.image.resize`, and an end-to-end check on the real model matched Python's outputs to 5 decimal places.
@@ -213,8 +216,26 @@ All numbers above come from held-out images **from the same datasets**. The lemo
 ## Offline and privacy
 
 - `vite-plugin-pwa` precaches the app shell, fonts, icons, both `model.json` files, **every weight shard by name** and both metadata files. `npm run build` fails if any model file is missing from the precache manifest (`scripts/verify-sw.mjs`).
-- "AI READY OFFLINE" is shown only after both models have loaded, passed a self-test (shape, finite outputs, softmax sums to 1) **and** every shard is confirmed present in Cache Storage.
+- "Ready, and works offline" is shown only after all three models have loaded, passed a self-test (shape, finite outputs, softmax sums to 1) **and** every shard is confirmed present in Cache Storage.
 - No backend, no image upload, no analytics, no account. `?netlog=1` turns on a request logger for offline testing.
+
+## Security
+
+- **Strict Content-Security-Policy** (`security-headers.json`, shipped via `vercel.json` and used by `vite preview` so it is tested): scripts only from this origin, no `eval`, no plugins, no framing (`frame-ancestors 'none'`), and `connect-src 'self'`, so a photo has nowhere to be sent even if code were injected.
+- **Permissions-Policy:** camera for this origin only; microphone, location, payment and USB off.
+- `nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, HSTS.
+- **Camera is released whenever the app is hidden** (app switch, lock screen) and resumes on return.
+- **Untrusted files:** non-images and files over 60 MB are refused before decoding; images over 200 MP are refused after (decompression bombs).
+- **No backend, no accounts, no analytics, no third-party requests.** Development network logging (`?netlog=1`) does not exist in production builds.
+- Training-side downloads verify TLS (certifi); the iBean extractor writes only to an allowlist of class folders.
+- `npm audit`: 0 known vulnerabilities at the time of writing. `tests/security.test.ts` locks the header policy.
+
+## Datasets for garden crops: what was chosen and why
+
+Crops were chosen from the National Gardening Association's list of the most-grown home vegetables (tomatoes 86% of food gardens, then cucumbers, peppers, beans, carrots, squash…).
+- **Beans:** iBean (expert-annotated by NaCRRI, field smartphone photos, MIT). Its official test split was kept. 1,295 images, 0 duplicates, all 500×500 (no camera-format shortcut).
+- **Cucumber: not included.** The available datasets mix augmented copies with ~1,280 originals (half of them fruit, not leaves) and have no accompanying paper. Copies would leak between train and test, so they didn't meet the bar.
+- **PlantDoc** (real-world photos for the same crops, CC BY 4.0): the pipeline supports it (`training/garden/build_dataset.py`) but it was not used for this build; the download didn't finish over the available connection.
 
 ## Limitations
 
@@ -263,4 +284,6 @@ To test offline: open from the home-screen icon, turn on airplane mode, close an
 - Lemon dataset: CC BY 4.0. Cite the Mendeley dataset above.
 - PlantVillage: CC BY-SA 3.0 (per the repository's dataset card); cite Hughes & Salathé (2015).
 - MobileNetV2: Sandler et al., CVPR 2018 (ImageNet weights via Keras Applications).
-- Fonts (Barlow, Barlow Condensed, Space Grotesk, Chivo Mono): SIL Open Font License, self-hosted via Fontsource.
+- iBean (beans): Makerere AI Lab with NaCRRI, MIT licence (Hugging Face: AI-Lab-Makerere/beans).
+- Typeface: Public Sans, SIL Open Font License, self-hosted via Fontsource. Icons: Phosphor, MIT.
+- `tests/e2e/healthy-lemon.jpg` is one image from the lemon dataset (CC BY 4.0), used as the offline test photo.
