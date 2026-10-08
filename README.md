@@ -5,6 +5,8 @@ Take a photo of a leaf. CropGuard works out which plant it is, then a model on t
 
 Built for Impact Hacks 2026.
 
+**Data credit:** the models are trained on public datasets made by others: the Bangladesh lemon-leaf dataset (Mendeley Data, CC BY 4.0), PlantVillage (Hughes & Salathé, CC BY-SA 3.0) and iBean (Makerere AI Lab / NaCRRI, MIT). Full citations, licences, what we changed, and per-image manifests are in [DATA_SOURCES.md](DATA_SOURCES.md).
+
 > CropGuard is an AI **screening** tool, not a diagnosis. Results should be confirmed by an agricultural extension office or plant specialist.
 
 ---
