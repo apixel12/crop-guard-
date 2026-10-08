@@ -1,3 +1,4 @@
+import { CONFIDENCE_CUTOFF } from './ml/confidence'
 import { useEffect, useRef, useState } from 'react'
 import About from './components/About'
 import Capture from './components/Capture'
@@ -99,12 +100,12 @@ export default function App() {
         const m = models['lemon-v1']
         if (!m) throw new Error('The lemon model isn’t loaded.')
         const pred = await classifyLemon(m, image)
-        outcome = { kind: 'prediction', pred, info: lemonInfo(pred.top[0].label), cropName: 'Lemon', threshold: m.meta.thresholds.confidence }
+        outcome = { kind: 'prediction', pred, info: lemonInfo(pred.top[0].label), cropName: 'Lemon', threshold: CONFIDENCE_CUTOFF }
       } else {
         const m = models['garden-v1']
         if (!m) throw new Error('The garden model isn’t loaded.')
         const pred = await classifyPlantVillage(m, image, plant.cropKey)
-        outcome = { kind: 'prediction', pred, info: plantVillageInfo(pred.top[0].label), cropMismatch: pred.cropMismatch, cropName: plant.cropName, threshold: m.meta.thresholds.confidence }
+        outcome = { kind: 'prediction', pred, info: plantVillageInfo(pred.top[0].label), cropMismatch: pred.cropMismatch, cropName: plant.cropName, threshold: CONFIDENCE_CUTOFF }
       }
       const p = outcome.pred
       // a storage failure must not turn a valid result into an error
