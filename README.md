@@ -1,7 +1,7 @@
 # CropGuard
 
 **Offline plant-leaf disease screening that runs entirely on your phone.**
-Take a photo of a leaf. CropGuard works out which plant it is, then a model on the device identifies the likely condition, says how confident it is, explains what the condition means, and suggests conservative next steps. No upload, no account, no signal needed after the first visit.
+Take a photo of a leaf. CropGuard works out which plant it is, then a model on the device identifies the likely condition, says how confident it is, explains what the condition means, and suggests conservative next steps. No upload, no account, no signal needed after the first visit. All of this completely free.
 
 Built for Impact Hacks 2026.
 
