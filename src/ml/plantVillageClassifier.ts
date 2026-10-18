@@ -4,8 +4,8 @@ import type { LoadedModel } from './modelLoader'
 /** PlantVillage labels look like "Tomato___Late_blight". */
 export const cropOf = (label: string) => label.split('___')[0]
 
-/** Ordered by how commonly home gardeners grow them (National Gardening Association survey). */
 export const PV_CROPS: { key: string; name: string }[] = [
+  // garden favourites first (NGA survey), then the major field crops
   { key: 'Tomato', name: 'Tomato' },
   { key: 'Pepper,_bell', name: 'Bell pepper' },
   { key: 'Bean', name: 'Bean' },
@@ -13,6 +13,12 @@ export const PV_CROPS: { key: string; name: string }[] = [
   { key: 'Potato', name: 'Potato' },
   { key: 'Strawberry', name: 'Strawberry' },
   { key: 'Corn_(maize)', name: 'Corn' },
+  { key: 'Wheat', name: 'Wheat' },
+  { key: 'Rice', name: 'Rice' },
+  { key: 'Soybean', name: 'Soybean' },
+  { key: 'Cotton', name: 'Cotton' },
+  { key: 'Sugarcane', name: 'Sugarcane' },
+  { key: 'Cassava', name: 'Cassava' },
   { key: 'Grape', name: 'Grape' },
   { key: 'Apple', name: 'Apple' },
   { key: 'Peach', name: 'Peach' },
@@ -20,7 +26,6 @@ export const PV_CROPS: { key: string; name: string }[] = [
   { key: 'Blueberry', name: 'Blueberry' },
   { key: 'Raspberry', name: 'Raspberry' },
   { key: 'Orange', name: 'Orange' },
-  { key: 'Soybean', name: 'Soybean' },
 ]
 
 export interface PVPrediction extends Prediction {

@@ -28,6 +28,7 @@ MENDELEY = {  # name: (dataset id, version, filename to fetch)
     "rice_sethy": ("fwcj7stb8r", 2, "Rice Leaf Disease Images.7z"),
     "rice_riceleafbd": ("kx9rx8p2mz", 1, "Original Images.zip"),
     "cotton": ("74jsdxtmx2", 3, "Cotton-Original.zip"),
+    "cotton_sarcld": ("b3jy2p6k8w", 2, "Original Dataset.zip"),  # SAR-CLD-2024, originals only
     "sugarcane": ("9424skmnrk", 1, "Sugarcane Leaf Disease Dataset.rar"),
 }
 CASSAVA = "https://storage.googleapis.com/emcassavadata/cassavaleafdata.zip"  # TFDS 'cassava' source

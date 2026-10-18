@@ -38,7 +38,22 @@ def _gauss_kernel(sigma):
     return tf.tile(k, [1, 1, 3, 1])
 
 
-_GK = {s: _gauss_kernel(s) for s in (1.0, 1.8, 2.8)}
+_GK = {s: _gauss_kernel(s) for s in (1.0, 1.8, 2.8, 3.6)}
+
+
+def _motion_kernels():
+    """Hand-shake blur: horizontal, vertical and both diagonals, 3 lengths."""
+    ks = []
+    for n in (7, 11, 15):
+        line = tf.ones([n]) / n
+        h = tf.reshape(tf.linalg.diag(tf.zeros([n])) + tf.pad(line[None], [[n // 2, n - n // 2 - 1], [0, 0]]), [n, n])
+        d = tf.linalg.diag(line)
+        for k in (h, tf.transpose(h), d, tf.reverse(d, [1])):
+            ks.append(tf.tile(k[:, :, None, None], [1, 1, 3, 1]))
+    return ks
+
+
+_MK = _motion_kernels()
 
 
 def _blur(x, k):
@@ -100,17 +115,18 @@ def robust_augment(x, level="full"):
     x = tf.clip_by_value(x, 0, 255)
     # defocus blur
     if full:
-        idx = tf.random.uniform([], 0, 3, tf.int32)
-        blurred = tf.switch_case(idx, [lambda s=s: _blur(x, _GK[s]) for s in (1.0, 1.8, 2.8)])
-        x = _pick(x, blurred, _mask(b, 0.15))
-        # motion blur (horizontal or vertical)
-        mk = tf.ones([1, 9, 3, 1]) / 9.0
-        mk = tf.cond(tf.random.uniform([]) < 0.5, lambda: mk, lambda: tf.transpose(mk, [1, 0, 2, 3]))
-        x = _pick(x, tf.nn.depthwise_conv2d(x, mk, [1, 1, 1, 1], "SAME"), _mask(b, 0.12))
+        # v2: more and stronger blur, for phone photos taken in the field
+        idx = tf.random.uniform([], 0, 4, tf.int32)
+        blurred = tf.switch_case(idx, [lambda s=s: _blur(x, _GK[s]) for s in (1.0, 1.8, 2.8, 3.6)])
+        x = _pick(x, blurred, _mask(b, 0.22))
+        # motion blur: 4 directions x 3 lengths
+        mi = tf.random.uniform([], 0, len(_MK), tf.int32)
+        moved = tf.switch_case(mi, [lambda k=k: tf.nn.depthwise_conv2d(x, k, [1, 1, 1, 1], "SAME") for k in _MK])
+        x = _pick(x, moved, _mask(b, 0.20))
         # low resolution
         r = tf.random.uniform([], 40, 112, tf.int32)
         low = tf.image.resize(tf.image.resize(x, (r, r), "area"), (S, S), "bilinear")
-        x = _pick(x, low, _mask(b, 0.12))
+        x = _pick(x, low, _mask(b, 0.15))
     # sensor noise
     if not full:  # light: mild resolution jitter so sharpness doesn't identify the source camera
         r = tf.random.uniform([], 128, 224, tf.int32)

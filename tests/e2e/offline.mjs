@@ -53,16 +53,42 @@ if (askedForPlant) await page.getByRole('button', { name: /^Lemon/ }).first().cl
 await page.locator('.verdict').waitFor({ timeout: 30000 })
 const cameraOutcome = (await page.locator('.verdict').innerText()).split('\n').filter(Boolean).slice(2, 5).join(' | ')
 
+// ---- farmer mode + video upload, still offline
+await page.getByRole('button', { name: 'Home' }).click()
+await page.getByRole('radio', { name: /Farmer/ }).click()
+await page.getByRole('button', { name: /Check a leaf/ }).click()
+// make a real 2-second video in the browser (canvas + MediaRecorder) from the test photo
+const webm = await page.evaluate(async (src) => {
+  const img = new Image(); img.src = src; await img.decode()
+  const c = document.createElement('canvas'); c.width = 640; c.height = 640
+  const ctx = c.getContext('2d'); const rec = new MediaRecorder(c.captureStream(15), { mimeType: 'video/webm' })
+  const parts = []; rec.ondataavailable = (e) => parts.push(e.data); rec.start()
+  const t0 = performance.now()
+  while (performance.now() - t0 < 2000) { const d = Math.sin((performance.now() - t0) / 200) * 6; ctx.drawImage(img, d, d, 640, 640); await new Promise((r) => setTimeout(r, 60)) }
+  rec.stop(); await new Promise((r) => (rec.onstop = r))
+  const buf = await new Blob(parts, { type: 'video/webm' }).arrayBuffer()
+  return Array.from(new Uint8Array(buf))
+}, 'data:image/jpeg;base64,' + (await import('node:fs')).readFileSync(process.env.E2E_PHOTO ?? 'tests/e2e/healthy-lemon.jpg').toString('base64'))
+await page.locator('input[type=file]').setInputFiles({ name: 'leaf.webm', mimeType: 'video/webm', buffer: Buffer.from(webm) })
+await page.getByText(/frames captured/).waitFor({ timeout: 30000 })
+await page.getByRole('button', { name: 'Check this leaf' }).click()
+await page.locator('.verdict, h1:has-text("Which plant is this?"), h1:has-text("needs retaking")').first().waitFor({ timeout: 30000 })
+if (await page.getByRole('heading', { name: 'Which plant is this?' }).isVisible()) await page.getByRole('button', { name: /^Lemon/ }).first().click()
+await page.locator('.verdict').waitFor({ timeout: 30000 })
+const videoMeta = await page.locator('.fine-print').last().innerText()
+const farmerPanel = await page.locator('.panel.farmer').count()
+await page.screenshot({ path: 'test-results/5-video-farmer.png', fullPage: true })
+
 // ---- history offline
 await page.getByRole('button', { name: 'Home' }).click()
 await page.getByRole('button', { name: 'History' }).first().click()
 await page.locator('.list-row').first().waitFor({ timeout: 10000 })
 const historyCount = await page.locator('.list-row').count()
-await page.screenshot({ path: 'test-results/5-history.png' })
+await page.screenshot({ path: 'test-results/6-history.png' })
 
-console.log(JSON.stringify({ online, offline: { verdict, plantLine, meta, askedForPlant, cameraOutcome, historyCount,
+console.log(JSON.stringify({ online, offline: { verdict, plantLine, meta, askedForPlant, cameraOutcome, videoMeta, farmerPanel, historyCount,
   requestsWhileOffline: [...new Set(offlineReq)].filter(u => !u.startsWith('blob:') && !u.startsWith('data:')) }, errors: log }, null, 2))
 await browser.close()
-const fail = !verdict || !/Lemon/.test(plantLine) || historyCount < 2 || log.length > 0
+const fail = !verdict || !/Lemon/.test(plantLine) || !/sharpest frames/.test(videoMeta) || historyCount < 3 || log.length > 0
 if (fail) { console.error('E2E FAILED'); process.exit(1) }
 console.log('E2E PASSED')
