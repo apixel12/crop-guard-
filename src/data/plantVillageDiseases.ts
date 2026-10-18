@@ -57,12 +57,37 @@ const rows: Row[] = [
     ['Small rusty-brown, powdery pustules, mostly on the leaf underside', 'Pustules often ringed with yellow'], 'moderate',
     ['Improve air flow between plants', ISOLATE, 'Remove plant debris at the end of the season']],
   HEALTHY('Bean'),
+  // Field crops (see DATA_SOURCES.md)
+  ['Rice___Bacterial_leaf_blight', 'Bacterial Leaf Blight', 'Bacterial disease (Xanthomonas oryzae) spread by water, rain and wind.', ['Wavy yellow to white stripes from the leaf tip and edges', 'Leaves dry out from the tip down'], 'high', ['Avoid too much nitrogen fertiliser', 'Drain the field if the outbreak is severe']],
+  ['Rice___Blast', 'Blast', 'Fungal disease (Magnaporthe oryzae), the most damaging rice disease worldwide.', ['Diamond-shaped spots with grey centres and brown edges', 'Rotting at the base of the grain head'], 'high', ['Split nitrogen into several smaller doses', 'Keep fields flooded where possible']],
+  ['Rice___Brown_spot', 'Brown Spot', 'Fungal disease (Bipolaris oryzae), common on nutrient-poor soils.', ['Oval brown spots with grey centres', 'Spots on grains too'], 'moderate', ['Check soil potassium and silicon', 'Use clean seed']],
+  ['Rice___Tungro', 'Tungro', 'Viral disease spread by green leafhoppers.', ['Yellow-orange leaves from the tip', 'Stunted plants with few shoots'], 'high', ['Plant at the same time as neighbouring fields', 'Plough in infected stubble']],
+  HEALTHY('Rice'),
+  ['Wheat___Yellow_rust', 'Yellow (Stripe) Rust', 'Fungal disease (Puccinia striiformis) spread by wind over long distances.', ['Yellow powdery pustules in stripes along the veins'], 'high', ['Watch regional rust alerts', 'Grow resistant varieties']],
+  ['Wheat___Brown_rust', 'Brown (Leaf) Rust', 'Fungal disease (Puccinia triticina) spread by wind.', ['Scattered round orange-brown pustules'], 'moderate', ['Grow resistant varieties']],
+  ['Wheat___Septoria', 'Septoria Leaf Blotch', 'Fungal disease (Zymoseptoria tritici) spread by rain splash.', ['Long brown blotches with tiny black dots', 'Lower leaves first'], 'moderate', ['Rotate crops', 'Choose resistant varieties']],
+  ['Wheat___Powdery_mildew', 'Powdery Mildew', 'Fungal disease (Blumeria graminis) of dense, humid crops.', ['White fluffy patches on leaves and stems'], 'moderate', ['Avoid too much nitrogen', 'Grow resistant varieties']],
+  HEALTHY('Wheat'),
+  ['Cotton___Bacterial_blight', 'Bacterial Blight', 'Bacterial disease (Xanthomonas) carried on seed and splashed by rain.', ['Angular water-soaked spots that turn dark', 'Black lesions on stems'], 'moderate', ['Use clean, treated seed', 'Rotate crops and destroy residue']],
+  ['Cotton___Fusarium_wilt', 'Fusarium Wilt', 'Soil-borne fungal disease (Fusarium oxysporum) that blocks the plant’s water flow.', ['Yellowing and wilting from the bottom leaves', 'Brown streaks inside the stem'], 'high', ['Grow resistant varieties', 'Clean equipment between fields']],
+  ['Cotton___Leaf_curl_virus', 'Leaf Curl Virus', 'Viral disease spread by whiteflies.', ['Curled leaves with thick veins', 'Small leaf-like growths under the leaf'], 'high', ['Remove weeds that host whiteflies', 'Grow tolerant varieties']],
+  HEALTHY('Cotton'),
+  ['Sugarcane___Mosaic', 'Mosaic', 'Viral disease spread by aphids and infected seed cane.', ['Light and dark green mosaic streaks'], 'moderate', ['Plant healthy seed cane']],
+  ['Sugarcane___Red_rot', 'Red Rot', 'Fungal disease (Colletotrichum falcatum), among the most serious in sugarcane.', ['Red patches inside the stalk with white bands', 'Top leaves drying'], 'high', ['Plant disease-free cuttings', 'Improve drainage']],
+  ['Sugarcane___Rust', 'Rust', 'Fungal disease spread by wind.', ['Brown or orange pustules on leaves'], 'moderate', ['Grow resistant varieties']],
+  ['Sugarcane___Yellow_leaf', 'Yellow Leaf', 'Usually a virus spread by aphids and infected seed cane.', ['Yellow midrib on the underside of older leaves'], 'moderate', ['Plant virus-free seed cane']],
+  HEALTHY('Sugarcane'),
+  ['Cassava___Bacterial_blight', 'Bacterial Blight', 'Bacterial disease spread on cuttings, tools and rain.', ['Angular water-soaked spots', 'Wilting and shoot dieback'], 'high', ['Plant clean cuttings', 'Burn infected debris']],
+  ['Cassava___Brown_streak_disease', 'Brown Streak Disease', 'Viral disease that rots the roots, spread by cuttings and whiteflies.', ['Yellow feathery patches along veins', 'Brown rot inside roots'], 'high', ['Plant certified clean cuttings', 'Harvest early if roots are at risk']],
+  ['Cassava___Green_mottle', 'Green Mottle', 'Viral disease spread mainly through cuttings.', ['Small yellow spots and mottling'], 'low', ['Plant clean cuttings']],
+  ['Cassava___Mosaic_disease', 'Mosaic Disease', 'Viral disease spread by whiteflies and cuttings; the most damaging cassava disease in Africa.', ['Yellow-green mosaic and twisted leaves', 'Stunted plants'], 'high', ['Plant resistant varieties and clean cuttings', 'Pull out infected plants early']],
+  HEALTHY('Cassava'),
 ]
 
 const CROP_NAME: Record<string, string> = {
   'Cherry_(including_sour)': 'Cherry',
   'Corn_(maize)': 'Corn',
-  'Pepper,_bell': 'Bell Pepper',
+  'Pepper,_bell': 'Bell pepper',
 }
 
 export const PLANTVILLAGE_CONDITIONS: Record<string, ConditionInfo> = Object.fromEntries(

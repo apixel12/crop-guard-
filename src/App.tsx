@@ -1,7 +1,8 @@
 import { CONFIDENCE_CUTOFF } from './ml/confidence'
 import { useEffect, useRef, useState } from 'react'
 import About from './components/About'
-import Capture from './components/Capture'
+import Capture, { type Captured } from './components/Capture'
+import { chooseFrames, type Source } from './ml/frames'
 import ChoosePlant from './components/ChoosePlant'
 import History from './components/History'
 import Home from './components/Home'
@@ -41,7 +42,8 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ s: 'home' })
   const [online, setOnline] = useState(navigator.onLine)
   const [offlineReady, setOfflineReady] = useState(false)
-  const img = useRef<HTMLImageElement | null>(null) // the photo being checked (kept for "Change plant")
+  // what is being checked: the frames analysed + a still for thumbnails (kept for "Change plant")
+  const img = useRef<{ frames: Source[]; still: Source } | null>(null)
 
   // Release the full-resolution photo once no screen shows it any more.
   const lastPhoto = useRef<string | null>(null)
@@ -99,12 +101,12 @@ export default function App() {
       if (plant.kind === 'lemon') {
         const m = models['lemon-v1']
         if (!m) throw new Error('The lemon model isn’t loaded.')
-        const pred = await classifyLemon(m, image)
+        const pred = await classifyLemon(m, image.frames)
         outcome = { kind: 'prediction', pred, info: lemonInfo(pred.top[0].label), cropName: 'Lemon', threshold: CONFIDENCE_CUTOFF }
       } else {
         const m = models['garden-v1']
         if (!m) throw new Error('The garden model isn’t loaded.')
-        const pred = await classifyPlantVillage(m, image, plant.cropKey)
+        const pred = await classifyPlantVillage(m, image.frames, plant.cropKey)
         outcome = { kind: 'prediction', pred, info: plantVillageInfo(pred.top[0].label), cropMismatch: pred.cropMismatch, cropName: plant.cropName, threshold: CONFIDENCE_CUTOFF }
       }
       const p = outcome.pred
@@ -116,7 +118,7 @@ export default function App() {
           prediction: p.status === 'confident' ? p.top[0].label : 'Uncertain',
           status: p.status,
           confidence: p.top[0].confidence,
-          thumbnail: await makeThumbnail(image),
+          thumbnail: await makeThumbnail(image.still),
         })
         outcome.saved = true
       } catch (e) {
@@ -129,20 +131,24 @@ export default function App() {
     setScreen({ s: 'result', photo, plant, suggestions, outcome })
   }
 
-  /** New photo: quality check → identify the plant → check, or ask which plant. */
-  const analyze = async (image: HTMLImageElement) => {
-    img.current = image
-    const photo = image.src
-    setScreen({ s: 'processing', photo, step: 'Looking at the photo…' })
+  /** New photo or video: quality check → identify the plant → check, or ask which plant. */
+  const analyze = async (c: Captured) => {
+    const preview = c.kind === 'photo' ? c.img : c.preview
+    const photo = preview.src
+    setScreen({ s: 'processing', photo, step: c.kind === 'video' ? 'Picking the sharpest frames…' : 'Looking at the photo…' })
     await paint()
     try {
-      const q = checkQuality(image)
-      if (!q.ok) return setScreen({ s: 'result', photo, plant: null, suggestions: [], outcome: { kind: 'quality', report: q } })
+      // video: keep only frames that pass the quality gate, sharpest first
+      const choice = c.kind === 'photo' ? null : chooseFrames(c.frames)
+      const q = c.kind === 'photo' ? checkQuality(c.img) : choice!.report
+      if (!q.ok || (choice && !choice.best.length)) return setScreen({ s: 'result', photo, plant: null, suggestions: [], outcome: { kind: 'quality', report: q } })
+      const image = { frames: c.kind === 'photo' ? [c.img] : choice!.best, still: preview }
+      img.current = image
       const router = models['router-v1']
       if (!router) return setScreen({ s: 'choose', photo, suggestions: [], reason: 'unsure' })
       setScreen({ s: 'processing', photo, step: 'Working out which plant this is…' })
       await paint()
-      const id = await identifyPlant(router, image)
+      const id = await identifyPlant(router, image.frames)
       if (id.plant) await check(photo, id.plant, id.suggestions)
       else setScreen({ s: 'choose', photo, suggestions: id.suggestions, reason: 'unsure' })
     } catch (e) {

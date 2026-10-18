@@ -1,4 +1,4 @@
-import { runModel, type Prediction } from './classify'
+import { runModel, type ImageSource, type Prediction } from './classify'
 import type { LoadedModel } from './modelLoader'
 import { PV_CROPS } from './plantVillageClassifier'
 
@@ -21,7 +21,7 @@ export interface Identification extends Prediction {
   suggestions: Plant[] // the router's top guesses, best first
 }
 
-export async function identifyPlant(m: LoadedModel, img: HTMLImageElement): Promise<Identification> {
+export async function identifyPlant(m: LoadedModel, img: ImageSource | ImageSource[]): Promise<Identification> {
   if (m.id !== 'router-v1') throw new Error('requires the plant-identification model')
   const p = await runModel(m, img)
   const suggestions = p.top.map((t) => plantFromName(t.label)).filter((x): x is Plant => !!x)

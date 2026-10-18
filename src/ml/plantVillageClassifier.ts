@@ -1,4 +1,4 @@
-import { runModel, type Prediction } from './classify'
+import { runModel, type ImageSource, type Prediction } from './classify'
 import type { LoadedModel } from './modelLoader'
 
 /** PlantVillage labels look like "Tomato___Late_blight". */
@@ -32,7 +32,7 @@ export interface PVPrediction extends Prediction {
  * renormalising inside the chosen crop (which would fabricate confidence). */
 export async function classifyPlantVillage(
   m: LoadedModel,
-  img: ImageBitmap | HTMLImageElement,
+  img: ImageSource | ImageSource[],
   cropKey: string,
 ): Promise<PVPrediction> {
   if (m.id !== 'garden-v1') throw new Error('requires the PlantVillage model')

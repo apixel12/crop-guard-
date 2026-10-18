@@ -1,3 +1,5 @@
+import { farmerInfo } from '../data/farmerDetails'
+import { useMode } from '../hooks/useMode'
 import { ArrowLeft, CaretDown, CheckCircle, Question, WarningCircle, WarningOctagon } from '@phosphor-icons/react'
 import type { ConditionInfo } from '../data/types'
 import type { Prediction } from '../ml/classify'
@@ -54,10 +56,12 @@ function Ranked({ top, displayName }: { top: Prediction['top']; displayName: (l:
 }
 
 export default function Result({ photo, outcome, onRetake, onHome, displayName, onChangePlant }: Props) {
+  const { mode } = useMode()
   const p = outcome.kind === 'prediction' ? outcome : null
   const confident = p?.pred.status === 'confident'
   const info = p?.info
   const healthy = confident && info?.severity === 'none'
+  const farmer = info ? farmerInfo(info) : undefined
   const sev = info ? SEVERITY[info.severity] : null
 
   return (
@@ -150,6 +154,29 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName, 
         </div>
       )}
 
+      {p && confident && info && mode === 'farmer' && farmer && (
+        <div className="panel farmer">
+          <p className="farmer-tag">Farmer detail</p>
+          {!healthy && (
+            <dl className="agronomy">
+              <dt>Cause</dt><dd>{farmer.cause}</dd>
+              <dt>How it spreads</dt><dd>{farmer.spread}</dd>
+              <dt>Favoured by</dt><dd>{farmer.favoredBy}</dd>
+              <dt>Why it matters</dt><dd>{farmer.impact}</dd>
+            </dl>
+          )}
+          <section>
+            <h3>Scouting</h3>
+            <p>{farmer.scouting}</p>
+          </section>
+          <section>
+            <h3>{healthy ? 'Keep it that way' : 'Integrated management'}</h3>
+            <ol className="steps">{farmer.management.map((s) => <li key={s}>{s}</li>)}</ol>
+          </section>
+          <p className="caption">General guidance only. Registrations, thresholds and resistance differ by region: confirm with your local extension service or a certified crop adviser before treating.</p>
+        </div>
+      )}
+
       {p && (
         <details className="panel">
           <summary>{confident ? 'Other possibilities' : 'What the model was considering'}<CaretDown size={18} aria-hidden /></summary>
@@ -159,7 +186,7 @@ export default function Result({ photo, outcome, onRetake, onHome, displayName, 
 
       <p className="fine-print">
         A screening aid, not a diagnosis. {p && (p.saved ? 'Saved to your history.' : 'Not saved: this phone’s storage is unavailable.')}
-        {p && ` Checked in ${Math.round(p.pred.inferenceMs)} ms.`}
+        {p && ` Checked in ${Math.round(p.pred.inferenceMs)} ms${(p.pred.frames ?? 1) > 1 ? `, combining the ${p.pred.frames} sharpest frames from your video` : ''}.`}
       </p>
       <div className="sticky-cta">
         <button className="btn primary full" onClick={onRetake}>Check another leaf</button>

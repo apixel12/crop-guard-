@@ -5,6 +5,7 @@ import { useModels } from '../hooks/useModels'
 import type { ModelId } from '../ml/modelRegistry'
 import { PV_CROPS } from '../ml/plantVillageClassifier'
 import { ScanRow } from './History'
+import { ModeSwitch } from '../hooks/useMode'
 
 interface Props {
   onScan: () => void
@@ -42,7 +43,8 @@ export default function Home({ onScan, onHistory, onAbout, online, offlineReady,
 
       <div style={{ display: 'grid', gap: 'var(--s3)' }}>
         <h1>Is something wrong with your plant?</h1>
-        <p className="lede">Take a photo of one leaf. CropGuard works out which plant it is and checks it for common problems, right here on your phone.</p>
+        <p className="lede">Take a photo or short video of one leaf. CropGuard works out which plant it is and checks it for common problems, right here on your phone.</p>
+        <ModeSwitch />
       </div>
 
       <div style={{ display: 'grid', gap: 'var(--s3)' }}>

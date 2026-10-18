@@ -1,10 +1,21 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { ArrowClockwise, ArrowLeft, ImageSquare } from '@phosphor-icons/react'
+import { ArrowClockwise, ArrowLeft, ImageSquare, VideoCamera } from '@phosphor-icons/react'
+import { chooseFrames, framesFromStream, framesFromVideoFile, type Source } from '../ml/frames'
+
+/** What the user captured: one photo, or frames sampled from a video. */
+export type Captured = { kind: 'photo'; img: HTMLImageElement } | { kind: 'video'; frames: Source[]; preview: HTMLImageElement }
 
 interface Props {
   tips: string[]
   onBack: () => void
-  onAnalyze: (img: HTMLImageElement) => void
+  onAnalyze: (c: Captured) => void
+}
+
+/** A still to show for a video: the sharpest sampled frame. */
+async function previewOf(frames: HTMLCanvasElement[]): Promise<HTMLImageElement> {
+  const best = chooseFrames(frames, 1).best[0] ?? frames[0]
+  const blob = await new Promise<Blob>((res, rej) => (best as HTMLCanvasElement).toBlob((b) => (b ? res(b) : rej(new Error('preview failed'))), 'image/jpeg', 0.9))
+  return loadImage(blob)
 }
 
 /** Larger than any phone camera (200 MP); guards against decompression-bomb files. */
@@ -42,6 +53,9 @@ export default function Capture({ tips, onBack, onAnalyze }: Props) {
   const [shot, setShot] = useState<HTMLImageElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [square, setSquare] = useState<CSSProperties>({ inset: '12.5% 0%' })
+  const [frames, setFrames] = useState<HTMLCanvasElement[] | null>(null) // set when the capture is a video
+  const [recording, setRecording] = useState<number | null>(null) // 0..1 progress while sampling video
+  const [busy, setBusy] = useState(false)
 
   // Outline exactly the center square the model analyzes. The preview uses
   // object-fit: contain, so nothing the model sees is hidden off-screen.
@@ -122,11 +136,40 @@ export default function Capture({ tips, onBack, onAnalyze }: Props) {
     }, 'image/jpeg', 0.92)
   }
 
+  const record = async () => {
+    const v = video.current
+    if (!v || !v.videoWidth || recording !== null) return
+    setErr(null)
+    setRecording(0)
+    try {
+      const fr = await framesFromStream(v, setRecording)
+      if (!fr.length) throw new Error('No frames were captured. Try again.')
+      const img = await previewOf(fr)
+      shotUrl.current = img.src
+      setFrames(fr)
+      setShot(img)
+      stop()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setRecording(null)
+    }
+  }
+
   const pick = async (f: File | undefined) => {
     if (!f) return
     try {
       setErr(null)
-      const img = await loadImage(f)
+      let img: HTMLImageElement
+      if (f.type.startsWith('video/')) {
+        setBusy(true)
+        const fr = await framesFromVideoFile(f)
+        img = await previewOf(fr)
+        setFrames(fr)
+      } else {
+        img = await loadImage(f)
+        setFrames(null)
+      }
       if (shot) URL.revokeObjectURL(shot.src)
       shotUrl.current = img.src
       setShot(img)
@@ -134,6 +177,7 @@ export default function Capture({ tips, onBack, onAnalyze }: Props) {
     } catch (e) {
       setErr((e as Error).message)
     } finally {
+      setBusy(false)
       if (fileInput.current) fileInput.current.value = '' // allow re-picking the same file
     }
   }
@@ -142,6 +186,7 @@ export default function Capture({ tips, onBack, onAnalyze }: Props) {
     if (shot) URL.revokeObjectURL(shot.src)
     shotUrl.current = null
     setShot(null)
+    setFrames(null)
     start()
   }
 
@@ -154,7 +199,7 @@ export default function Capture({ tips, onBack, onAnalyze }: Props) {
       <div className="viewfinder">
         {shot ? (
           <>
-            <img src={shot.src} alt="Your leaf photo" onLoad={(e) => fit(e.currentTarget, shot.naturalWidth, shot.naturalHeight)} />
+            <img src={shot.src} alt={frames ? 'Sharpest frame from your video' : 'Your leaf photo'} onLoad={(e) => fit(e.currentTarget, shot.naturalWidth, shot.naturalHeight)} />
             <div className="brackets analyzed" style={square} aria-hidden><span /><span /><span /><span /></div>
           </>
         ) : (
@@ -162,24 +207,32 @@ export default function Capture({ tips, onBack, onAnalyze }: Props) {
             <video ref={video} playsInline muted aria-label="Camera preview" onLoadedMetadata={measure} />
             {cam === 'live' && <div className="brackets" style={square} aria-hidden><span /><span /><span /><span /></div>}
             {cam === 'starting' && <div className="vf-msg"><span className="spinner" aria-hidden /><p>Starting camera…</p></div>}
+            {recording !== null && (
+              <div className="rec-chip" role="status"><span className="rec-dot" aria-hidden />Recording… hold steady<span className="rec-bar"><span style={{ transform: `scaleX(${recording})` }} /></span></div>
+            )}
+            {busy && <div className="vf-msg"><span className="spinner" aria-hidden /><p>Reading the video…</p></div>}
             {cam === 'unavailable' && (
               <div className="vf-msg">
                 <b>Camera not available</b>
-                <p>You can still choose a photo of the leaf from your library.</p>
+                <p>You can still choose a photo or video of the leaf from your library.</p>
               </div>
             )}
           </>
         )}
       </div>
 
-      {err && <div className="callout attention" role="alert"><div><b>That file couldn’t be opened.</b> {err}</div></div>}
+      {err && <div className="callout attention" role="alert"><div><b>That didn’t work.</b> {err}</div></div>}
 
       {shot ? (
         <>
-          <p className="hint">Only the area inside the square is checked. Is the leaf sharp and filling most of it?</p>
+          <p className="hint">
+            {frames
+              ? `${frames.length} frames captured. CropGuard checks the sharpest ones and combines them. Only the square is analyzed.`
+              : 'Only the area inside the square is checked. Is the leaf sharp and filling most of it?'}
+          </p>
           <div className="row-actions">
             <button className="btn" onClick={retake}><ArrowClockwise size={20} aria-hidden />Retake</button>
-            <button className="btn primary" onClick={() => { shotUrl.current = null; onAnalyze(shot) }}>Check this leaf</button>
+            <button className="btn primary" onClick={() => { shotUrl.current = null; onAnalyze(frames ? { kind: 'video', frames, preview: shot } : { kind: 'photo', img: shot }) }}>Check this leaf</button>
           </div>
         </>
       ) : (
@@ -188,15 +241,15 @@ export default function Capture({ tips, onBack, onAnalyze }: Props) {
           {cam === 'live' ? (
             <div className="capture-bar">
               <button className="gallery-btn" onClick={() => fileInput.current?.click()}><ImageSquare size={24} aria-hidden />Library</button>
-              <button className="shutter" onClick={capture} aria-label="Take photo" />
-              <span />
+              <button className="shutter" onClick={capture} aria-label="Take photo" disabled={recording !== null} />
+              <button className="gallery-btn video-btn" onClick={record} disabled={recording !== null}><VideoCamera size={24} aria-hidden />Video</button>
             </div>
           ) : (
-            <button className="btn primary full" onClick={() => fileInput.current?.click()}><ImageSquare size={20} aria-hidden />Choose a photo</button>
+            <button className="btn primary full" onClick={() => fileInput.current?.click()}><ImageSquare size={20} aria-hidden />Choose a photo or video</button>
           )}
         </>
       )}
-      <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => pick(e.target.files?.[0])} />
+      <input ref={fileInput} type="file" accept="image/*,video/*" hidden onChange={(e) => pick(e.target.files?.[0])} />
     </section>
   )
 }

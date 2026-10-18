@@ -65,7 +65,7 @@ export function analyzePixels(rgba: Uint8ClampedArray, w: number, h: number, src
   return { ok: issues.length === 0, issues, stats }
 }
 
-export function checkQuality(img: ImageBitmap | HTMLImageElement): QualityReport {
+export function checkQuality(img: ImageBitmap | HTMLImageElement | HTMLCanvasElement): QualityReport {
   const srcW = 'naturalWidth' in img ? img.naturalWidth : img.width
   const srcH = 'naturalHeight' in img ? img.naturalHeight : img.height
   // Judge the same center square the model analyzes (see preprocess.ts).

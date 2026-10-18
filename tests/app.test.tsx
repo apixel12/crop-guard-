@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import Capture from '../src/components/Capture'
+import { ModeProvider } from '../src/hooks/useMode'
 
 vi.mock('../src/ml/modelLoader', async (orig) => ({
   ...(await orig<typeof import('../src/ml/modelLoader')>()),
@@ -15,7 +16,7 @@ describe('camera fallback', () => {
     })
     render(<Capture tips={["t"]} onBack={() => {}} onAnalyze={() => {}} />)
     expect(await screen.findByText('Camera not available')).toBeTruthy()
-    const gallery = screen.getByText('Choose a photo')
+    const gallery = screen.getByText('Choose a photo or video')
     expect(gallery).toBeTruthy()
     fireEvent.click(gallery) // must not throw
   })
@@ -25,7 +26,7 @@ describe('model load failure', () => {
   it('shows Lemon AI unavailable and never claims offline readiness', async () => {
     const { ModelProvider } = await import('../src/hooks/useModels')
     const { default: Home } = await import('../src/components/Home')
-    render(<ModelProvider><Home onScan={() => {}} onHistory={() => {}} onAbout={() => {}} online offlineReady={false} displayName={(_c, l) => l} /></ModelProvider>)
+    render(<ModelProvider><ModeProvider><Home onScan={() => {}} onHistory={() => {}} onAbout={() => {}} online offlineReady={false} displayName={(_c, l) => l} /></ModeProvider></ModelProvider>)
     await waitFor(() => expect(screen.getByText('Some of CropGuard didn’t download.')).toBeTruthy())
     expect(screen.queryByText(/works offline/)).toBeNull()
     expect((screen.getByRole('button', { name: /Check a leaf/ }) as HTMLButtonElement).disabled).toBe(true)

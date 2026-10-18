@@ -166,3 +166,27 @@ details.more[open] summary svg { transform: rotate(180deg); }
 .plant-line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--s3); }
 .plant-line .text-link { padding: 0; min-height: 44px; }
 .btn.big { min-height: 60px; font-size: var(--t-lg); }
+
+/* video capture */
+.video-btn { justify-self: end; }
+.rec-chip { position: absolute; left: 12px; right: 12px; bottom: 12px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px 8px; padding: 10px 12px; border-radius: 10px; background: rgba(0, 0, 0, .62); color: #fff; font-size: var(--t-sm); font-weight: 600; }
+.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; animation: pulse 1s ease-in-out infinite; }
+.rec-bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.rec-bar span { display: block; height: 100%; background: #fff; transform-origin: left; transition: transform 180ms linear; }
+@keyframes pulse { 50% { opacity: .35; } }
+.shutter:disabled, .gallery-btn:disabled { opacity: .45; }
+
+/* gardener / farmer switch */
+.mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-top: var(--s2); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.mode-switch button { display: grid; gap: 1px; min-height: 52px; padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink-2); font-weight: 600; text-align: center; transition: background-color var(--fast) var(--ease); }
+.mode-switch button span { font-size: var(--t-cap); font-weight: 400; color: var(--ink-3); }
+.mode-switch button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+/* farmer detail */
+.panel.farmer { border-color: var(--green); }
+.farmer-tag { font-size: var(--t-cap); font-weight: 700; color: var(--green); }
+.agronomy { display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: var(--s2) var(--s4); margin: 0; font-size: var(--t-sm); }
+.agronomy dt { font-weight: 600; color: var(--ink); }
+.agronomy dd { margin: 0; color: var(--ink-2); }
+.steps { padding-left: 1.3em; display: grid; gap: var(--s2); }
+.steps li { color: var(--ink-2); }
+@media (max-width: 380px) { .agronomy { grid-template-columns: 1fr; } .agronomy dd { margin-bottom: var(--s2); } }

@@ -40,7 +40,7 @@ export async function deleteScan(id: string): Promise<void> {
   await (await db()).delete(STORE, id)
 }
 
-export async function makeThumbnail(img: ImageBitmap | HTMLImageElement, max = 192): Promise<Blob> {
+export async function makeThumbnail(img: ImageBitmap | HTMLImageElement | HTMLCanvasElement, max = 192): Promise<Blob> {
   const w = 'naturalWidth' in img ? img.naturalWidth : img.width
   const h = 'naturalHeight' in img ? img.naturalHeight : img.height
   const s = max / Math.max(w, h)
